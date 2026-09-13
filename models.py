@@ -282,7 +282,6 @@ def plan_models(col: Collection, specs: list[ModelSpec]) -> ModelPlan:
                 ModelPlanItem(
                     spec=spec,
                     action=ModelAction.CREATE,
-                    model=model,
                     checksums=spec_checksums,
                 )
             )
