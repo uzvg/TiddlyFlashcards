@@ -41,7 +41,6 @@ NOTETYPES_FILE = Path(__file__).parent / "tf_notetypes.toml"
 DEFAULT_CSS_FILE = Path(__file__).parent / "tf_card.css"
 
 HOST_PLACEHOLDER = "__HOST__"
-TF_MANAGED_KEY = "tf_managed"
 TF_CHECKSUM_KEY = "tf_checksum"
 
 
@@ -287,8 +286,9 @@ def plan_models(col: Collection, specs: list[ModelSpec]) -> ModelPlan:
             )
             continue
 
+        # 如果无法读取到 TF_CHECKSUM_KEY 的值 ➡ 该 model 存在但不由该插件管理
         # 存在但未被本插件托管 → 命名冲突，跳过并提示
-        if not model.get(TF_MANAGED_KEY):
+        if not col.get_aux_notetype_config(model["id"], TF_CHECKSUM_KEY):
             plan.warnings.append(
                 f"模型 {spec.name} 存在同名 but 未被本插件管理的 notetype，"
                 "已跳过（SKIP_CONFLICT）。如需接管，请人工重命名或删除该 notetype 后重新同步。"
@@ -303,9 +303,10 @@ def plan_models(col: Collection, specs: list[ModelSpec]) -> ModelPlan:
             )
             continue
 
+        # 当前 model 已经存在且受插件管理，需要对比是否需要更新
         anki_pair = anki_checksums(model)
 
-        # 先比结构：不同 → 破坏性变更，不自动执行
+        # 如果结构不同 → 破坏性变更，不自动执行
         if spec_checksums.structural != anki_pair.structural:
             plan.warnings.append(
                 f"模型 {spec.name} 发生破坏性结构变更（字段/模板增删改名、类型互换），"
@@ -349,13 +350,14 @@ def apply_plan(col: Collection, plan: ModelPlan) -> list[ModelPlanItem]:
     try:
         for item in plan.items:
             if item.action is ModelAction.CREATE:
-                created = _apply_create(mm, item)
+                created = _apply_create(col, item)
                 created_ids.append(created["id"])
                 applied.append(item)
             elif item.action is ModelAction.CONTENT_UPDATE:
                 assert item.model is not None
+                # 提前备份需要被更新的 model 的数据
                 snapshots[item.model["id"]] = copy.deepcopy(item.model)
-                _apply_content_update(mm, item)
+                _apply_content_update(col, item)
                 applied.append(item)
             # NOOP / REBUILD_PENDING / SKIP_CONFLICT：零写入
     except Exception as exc:
@@ -365,9 +367,10 @@ def apply_plan(col: Collection, plan: ModelPlan) -> list[ModelPlanItem]:
     return applied
 
 
-def _apply_create(mm, item: ModelPlanItem) -> NotetypeDict:
-    """全新创建 notetype，打 tf_managed 标记 + 双指纹（tf_checksum）。"""
+def _apply_create(col: Collection, item: ModelPlanItem) -> NotetypeDict:
+    """全新创建 notetype + 双指纹（tf_checksum）。"""
     spec = item.spec
+    mm = col.models
     model = mm.new(spec.name)
     model["type"] = spec.model_type
 
@@ -382,20 +385,26 @@ def _apply_create(mm, item: ModelPlanItem) -> NotetypeDict:
         mm.add_template(model, t)
 
     model["css"] = spec.css
-    model[TF_MANAGED_KEY] = True
-    model[TF_CHECKSUM_KEY] = item.checksums.content
+
+    # 把checksum添加到当前model的附属信息中
+    col.set_aux_notetype_config(
+        model["id"],
+        TF_CHECKSUM_KEY,
+        item.checksums.content
+    )
 
     mm.add(model)
     item.model = model
     return model
 
 
-def _apply_content_update(mm, item: ModelPlanItem) -> None:
+def _apply_content_update(col: Collection, item: ModelPlanItem) -> None:
     """最小写入：逐字段、逐模板、逐 CSS 比对，只写有差异的项。
 
     结构指纹相同 ⇒ 字段/模板数量与名称、model_type 均一致，
     此路径只允许非破坏性变化（模板内容 qfmt/afmt、css）。
     """
+    mm = col.models
     spec = item.spec
     assert item.model is not None
     model = copy.deepcopy(item.model)
@@ -429,8 +438,12 @@ def _apply_content_update(mm, item: ModelPlanItem) -> None:
     if not changed:
         return
 
-    model[TF_MANAGED_KEY] = True
-    model[TF_CHECKSUM_KEY] = item.checksums.content
+    # 保存额外的 checksum 信息
+    col.set_aux_notetype_config(
+        model["id"],
+        TF_CHECKSUM_KEY,
+        item.checksums.content
+    )
     mm.update_dict(model)
 
 
@@ -460,7 +473,7 @@ def verify_models(col: Collection, applied: list[ModelPlanItem]) -> list[str]:
         if model is None:
             errors.append(f"模型 {item.spec.name} 同步后未找到，校验失败。")
             continue
-        stored = model.get(TF_CHECKSUM_KEY)
+        stored = col.get_aux_notetype_config(model["id"], TF_CHECKSUM_KEY)
         if stored != item.checksums.content:
             errors.append(
                 f"模型 {item.spec.name} 校验失败：tf_checksum 与内容指纹不一致。"
