@@ -1,0 +1,146 @@
+# TiddlyFlashcards notetype 声明式定义（唯一来源，只读不改写）
+# 由 parse_notetypes() 解析为 ModelSpec，render_specs() 注入配置后渲染。
+# 模板中包含 __HOST__ 占位，渲染时替换为配置中的 api_url。
+# model_type: 0 = 普通卡片（basic），1 = 填空（cloze）
+#
+# 结构指纹只关心：字段名序列 + model_type + 模板名序列
+# 内容指纹额外包含：qfmt/afmt + css
+# 字段/模板增删改名、类型互换 → 破坏性变更（REBUILD_PENDING），不做自动迁移。
+
+[TFBasic]
+model_type = 0
+fields = ["Front", "Back", "TFNoteId", "TFChecksum"]
+
+[[TFBasic.templates]]
+name = "Card 1"
+front = """
+{{Front}}
+"""
+back = """
+{{FrontSide}}
+<hr id="answer">
+
+{{Back}}
+
+<div class="tf-link">
+    <a href="__HOST__/tiddler/{{TFNoteId}}">
+        Open in TiddlyWiki
+    </a>
+</div>
+"""
+
+[TFCloze]
+model_type = 1
+fields = ["Text", "Back Extra", "TFNoteId", "TFChecksum"]
+
+[[TFCloze.templates]]
+name = "Card 1"
+front = """
+{{cloze:Text}}
+"""
+back = """
+{{cloze:Text}}
+
+<br>
+
+{{Back Extra}}
+
+<div class="tf-link">
+    <a href="__HOST__/tiddler/{{TFNoteId}}">
+        Open in TiddlyWiki
+    </a>
+</div>
+"""
+
+# TFType 对应 Anki 中的 Basic（type in the answer）
+[TFType]
+model_type = 0
+fields = ["Front", "Back", "TFNoteId", "TFChecksum"]
+
+[[TFType.templates]]
+name = "Card 1"
+front = """
+{{Front}}
+
+{{type:Back}}
+"""
+back = """
+{{Front}}
+
+<hr id=answer>
+
+{{type:Back}}
+
+<div class="tf-link">
+    <a href="__HOST__/tiddler/{{TFNoteId}}">
+        Open in TiddlyWiki
+    </a>
+</div>
+"""
+
+# TFPair 对应 Anki 中的 Basic（and Reversed card）
+[TFPair]
+model_type = 0
+fields = ["Front", "Back", "TFNoteId", "TFChecksum"]
+
+[[TFPair.templates]]
+name = "Card 1"
+front = """
+{{Front}}
+"""
+back = """
+{{FrontSide}}
+
+<hr id=answer>
+
+{{Back}}
+
+<div class="tf-link">
+    <a href="__HOST__/tiddler/{{TFNoteId}}">
+        Open in TiddlyWiki
+    </a>
+</div>
+"""
+
+# TFOptionalPair 对应 Anki 中的 Basic（Optional Reversed Card）
+[TFOptionalPair]
+model_type = 0
+fields = ["Front", "Back", "Add Reverse", "TFNoteId", "TFChecksum"]
+
+[[TFOptionalPair.templates]]
+name = "Card 1"
+front = """
+{{Front}}
+"""
+back = """
+{{FrontSide}}
+
+<hr id=answer>
+
+{{Back}}
+
+<div class="tf-link">
+    <a href="__HOST__/tiddler/{{TFNoteId}}">
+        Open in TiddlyWiki
+    </a>
+</div>
+"""
+
+[[TFOptionalPair.templates]]
+name = "Card 2"
+front = """
+{{#Add Reverse}}{{Back}}{{/Add Reverse}}
+"""
+back = """
+{{FrontSide}}
+
+<hr id=answer>
+
+{{Front}}
+
+<div class="tf-link">
+    <a href="__HOST__/tiddler/{{TFNoteId}}">
+        Open in TiddlyWiki
+    </a>
+</div>
+"""
