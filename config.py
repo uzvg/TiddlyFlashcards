@@ -99,11 +99,14 @@ def load_config() -> PluginConfig:
     # Anki Add-on 通过 __name__ 区分不同插件的配置命名空间。
     raw = mw.addonManager.getConfig(__name__) or {}
     # raw(dict) 可能缺键，先与默认值合并再解析成 dataclass。
+    # 解包成关键字参数，先解包DEFAULT_CONFIG，再解包raw，后面的raw会覆盖同名的默认键
+    #   最终得到一个“默认值+用户配置”的完整 dict。
     return PluginConfig.from_dict({**DEFAULT_CONFIG, **raw})
 
 
 def save_config(cfg: PluginConfig) -> None:
     # writeConfig 接受 JSON-like 的 dict；所以这里把 dataclass 再转换回 dict。
+    # 用户配置，会以JSON文件的方式，被保存到当前文件夹下的meta.json文件中
     mw.addonManager.writeConfig(__name__, cfg.to_dict())
 
 
@@ -142,8 +145,10 @@ def check_tiddlywiki(path: str) -> tuple[bool, str]:
     except OSError as exc:
         return False, str(exc)
 
+    # 如果执行失败：
     if result.returncode != 0:
         return False, result.stderr.strip() or "Non-zero exit code."
+    # 如果执行成功：
     return True, result.stdout.strip() or result.stderr.strip()
 
 
