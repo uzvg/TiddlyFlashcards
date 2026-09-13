@@ -386,15 +386,15 @@ def _apply_create(col: Collection, item: ModelPlanItem) -> NotetypeDict:
 
     model["css"] = spec.css
 
+    mm.add(model)
+    item.model = model
+
     # 把checksum添加到当前model的附属信息中
     col.set_aux_notetype_config(
         model["id"],
         TF_CHECKSUM_KEY,
         item.checksums.content
     )
-
-    mm.add(model)
-    item.model = model
     return model
 
 
