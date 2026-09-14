@@ -296,7 +296,7 @@ class TiddlyFlashcardsImporter:
 
     def _show_summary(self):
         export_summary = "\n".join(
-            f"- {summary.path}: {summary.card_count} cards"
+            f"- {summary.path}: {summary.note_count} cards"
             for summary in self.wiki_summaries
         )
         if export_summary:
