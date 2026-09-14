@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn
 
 from aqt.utils import showCritical, showWarning
 
@@ -39,7 +39,7 @@ def export_all(cfg: PluginConfig | None = None) -> ExportResult:
     cfg = cfg or load_config()
     enabled_wikis = [wiki for wiki in cfg.wikis if wiki.enabled]
     if not enabled_wikis:
-        return _raise_empty_export([])
+        _raise_empty_export([])
 
     tiddlywiki_bin = _resolve_tiddlywiki_bin(cfg.tiddlywiki_bin)
     merged: dict[str, Any] = {}
@@ -59,12 +59,12 @@ def export_all(cfg: PluginConfig | None = None) -> ExportResult:
             merged[tf_note_id] = note
 
     if not merged:
-        return _raise_empty_export(wiki_summaries)
+        _raise_empty_export(wiki_summaries)
 
     return ExportResult(merged, wiki_summaries)
 
 
-def _raise_empty_export(wiki_summaries: list[WikiExportSummary]) -> None:
+def _raise_empty_export(wiki_summaries: list[WikiExportSummary]) -> NoReturn:
     """所有启用 wiki 都没有卡片时中止，防止 importer 误挂起现有卡片。"""
     wiki_paths = "\n".join(summary.path for summary in wiki_summaries)
     details = f"\n\nEnabled wikis:\n{wiki_paths}" if wiki_paths else ""
