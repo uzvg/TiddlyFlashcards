@@ -43,6 +43,8 @@ DEFAULT_CSS_FILE = Path(__file__).parent / "tf_card.css"
 HOST_PLACEHOLDER = "__HOST__"
 TF_CHECKSUM_KEY = "tf_checksum"
 
+COLLAPSED_FIELDS = {"TFNoteId", "TFChecksum"}
+
 
 # --------------------------------------------------
 # 动作常量（SCREAMING_SNAKE 枚举）
@@ -376,6 +378,8 @@ def _apply_create(col: Collection, item: ModelPlanItem) -> NotetypeDict:
 
     for spec_field in spec.fields:
         f = mm.new_field(spec_field.name)
+        if spec_field.name in COLLAPSED_FIELDS:
+            f["collapsed"] = True
         mm.add_field(model, f)
 
     for tmpl in spec.templates:
