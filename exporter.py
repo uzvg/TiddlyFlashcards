@@ -15,6 +15,7 @@ from aqt.utils import showCritical, showWarning
 
 from .config import PluginConfig, WikiSource, load_config
 
+# tiddlywiki中的 flashcards JSON 数据的导出模板
 RENDER_TEMPLATE = "$:/uzvg/renderTemplates/flashcards-json-test"
 
 
@@ -100,7 +101,7 @@ def _export_wiki(wiki: WikiSource, tiddlywiki_bin: str) -> dict[str, Any]:
     elif not (wiki_path / "tiddlywiki.info").exists():
         raise FileNotFoundError(f"Not a valid TiddlyWiki folder: {wiki_path}")
 
-    # ---- 创建临时文件（必须关闭 fd，CLI 才能覆盖写入）----
+    # ---- 创建临时文件（必须关闭 fd，tiddlywiki CLI 才能覆盖写入）----
     fd, tmp_path = tempfile.mkstemp()
     os.close(fd)
 
