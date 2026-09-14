@@ -52,8 +52,9 @@ def export_all(cfg: PluginConfig | None = None) -> ExportResult:
         for tf_note_id, note in exported.items():
             if tf_note_id in merged:
                 showWarning(
-                    "TiddlyFlashcards found a duplicate TFNoteId and kept the "
-                    f"first occurrence:\n\nWiki: {wiki.path}\nTFNoteId: {tf_note_id}"
+                    "TiddlyFlashcards found a duplicate TFNoteId and kept the first occurrence:"
+                    f"Wiki: {wiki.path}"
+                    f"TFNoteId: {tf_note_id}"
                 )
                 continue
             merged[tf_note_id] = note
