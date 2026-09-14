@@ -23,7 +23,7 @@ class WikiExportSummary:
     """单个启用 wiki 的导出统计。"""
 
     path: str
-    card_count: int
+    note_count: int
 
 
 @dataclass(slots=True)
