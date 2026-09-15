@@ -13,12 +13,13 @@ JSON
             └── active + Anki suspend → active
 """
 
-import json
 import hashlib
+import json
 from collections.abc import Sequence
-from enum import StrEnum
 from dataclasses import dataclass
+from enum import StrEnum
 
+from anki.decks import DeckId
 from anki.notes import Note
 from aqt import mw
 from aqt.utils import showInfo
@@ -283,7 +284,7 @@ class TiddlyFlashcardsImporter:
     # Utils
     # =========================
 
-    def _get_deck_id(self, deck_name: str) -> int:
+    def _get_deck_id(self, deck_name: str) -> DeckId:
         """
         获得deck_id，用于update_deck
         如果deck存在，返回对应的deck id
@@ -291,8 +292,10 @@ class TiddlyFlashcardsImporter:
         """
         deck = self.col.decks.by_name(deck_name)
         if deck:
-            return deck["id"]
-        return self.col.decks.id(deck_name)
+            return DeckId(deck["id"])
+        did = self.col.decks.id(deck_name)
+        assert did is not None
+        return did
 
     def _show_summary(self):
         export_summary = "\n".join(
