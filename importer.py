@@ -95,6 +95,7 @@ class TiddlyFlashcardsImporter:
         self._apply_update()
         self._apply_suspend()
         self._apply_active()
+        self._apply_delete()
 
         self.col.save()
 
@@ -311,7 +312,8 @@ class TiddlyFlashcardsImporter:
             "TiddlyFlashcards Import Summary:\n"
             f"Create: {len(self.to_create)}\n"
             f"Update: {len(self.to_update)}\n"
-            f"Suspend: {len(self.to_suspend)}"
+            f"Suspend: {len(self.to_suspend)}\n"
+            f"Delete: {len(self.to_delete)}"
             f"{export_summary}"
         )
         showInfo(msg)
