@@ -11,6 +11,7 @@ def begin_sync():
     TiddlyFlashcardsImporter(result.data, result.wiki_summaries).run()
 
 def begin_sync_models():
+    assert mw.col is not None
     sync_models(mw.col)
 
 # Register config action (called once when the add-on loads)
