@@ -102,6 +102,25 @@ back = """
 </div>
 """
 
+[[TFPair.templates]]
+name = "Card 2"
+front = """
+{{Back}}
+"""
+back = """
+{{FrontSide}}
+
+<hr id=answer>
+
+{{Front}}
+
+<div class="tf-link">
+    <a href="__HOST__/tiddler/{{TFNoteId}}">
+        Open in TiddlyWiki
+    </a>
+</div>
+"""
+
 # TFOptionalPair 对应 Anki 中的 Basic（Optional Reversed Card）
 [TFOptionalPair]
 model_type = 0
