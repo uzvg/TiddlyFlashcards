@@ -6,6 +6,7 @@ from .importer import TiddlyFlashcardsImporter
 from .exporter import export_all
 
 def begin_sync():
+    assert mw.col is not None
     sync_models(mw.col)
     result = export_all()
     TiddlyFlashcardsImporter(result.data, result.wiki_summaries).run()
