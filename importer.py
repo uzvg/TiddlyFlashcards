@@ -18,9 +18,11 @@ import json
 from collections.abc import Sequence
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import cast
 
 from anki.decks import DeckId
 from anki.notes import Note
+from anki.collection import Collection
 from aqt import mw
 from aqt.utils import showInfo
 
@@ -69,7 +71,7 @@ class TiddlyFlashcardsImporter:
     ):
         self.data = data
         self.wiki_summaries = wiki_summaries
-        self.col = mw.col
+        self.col = cast(Collection, mw.col)
 
         self.parsed_notes: dict[str, ParsedNote] = {}
         self.anki_index: dict[str, AnkiNoteInfo] = {}
