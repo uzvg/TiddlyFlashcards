@@ -16,7 +16,7 @@ from aqt.utils import showCritical, showWarning
 from .config import PluginConfig, WikiSource, load_config
 
 # tiddlywiki中的 flashcards JSON 数据的导出模板
-RENDER_TEMPLATE = "$:/uzvg/renderTemplates/flashcards-json-test"
+RENDER_TEMPLATE = "$:/plugins/uzvg/TiddlyFlashcards/templates/tf-render-template"
 
 
 @dataclass(frozen=True, slots=True)
