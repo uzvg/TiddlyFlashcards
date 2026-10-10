@@ -1,9 +1,14 @@
+import importlib
 from aqt import mw
 from aqt.qt import QAction
 from .config import open_config_dialog
 from .models import sync_models
 from .importer import TiddlyFlashcardsImporter
 from .exporter import export_all
+
+def reload_config_dialog():
+    importlib.reload(config)
+    open_config_dialog()
 
 def begin_sync():
     assert mw.col is not None
@@ -25,3 +30,8 @@ mw.form.menuTools.addAction(sync_cards_action)
 sync_models_action = QAction("TiddlyFlashcards Sync Models", mw)
 sync_models_action.triggered.connect(begin_sync_models)
 mw.form.menuTools.addAction(sync_models_action)
+
+# Reload config diaglog config
+reload_config_dialog_action = QAction("Reload Config Dialg(For Debugging)", mw)
+reload_config_dialog_action.triggered.connect(reload_config_dialog)
+mw.form.menuTools.addAction(reload_config_dialog_action)
