@@ -2,6 +2,7 @@
 TiddlyFlashcards Plugin Config Dialog
 """
 
+import os
 import shutil
 import subprocess
 from dataclasses import dataclass, field, asdict
@@ -90,7 +91,6 @@ DEFAULT_CONFIG: dict = {
     "tiddlywiki_bin": "",
     "wikis": [],
     "custom_css": "",
-    "api_url": "http://127.0.0.1:8080",
 }
 
 
@@ -207,41 +207,7 @@ class _BaseTab(QWidget):
         raise NotImplementedError
 
 
-# ---------------------------------------------------------------------------
-# Environment Tab
-# ---------------------------------------------------------------------------
 
-
-class EnvironmentTab(_BaseTab):
-    def _build_ui(self) -> None:
-        layout = self._vbox()
-
-        self.bin_edit = QLineEdit(self._cfg.tiddlywiki_bin)
-        self.bin_edit.setPlaceholderText("Leave empty to auto-detect")
-        test_btn = QPushButton("Test")
-        test_btn.clicked.connect(self._on_test)
-
-        layout.addLayout(_field_row("TiddlyWiki Binary", self.bin_edit, test_btn))
-        layout.addStretch()
-
-    def _on_test(self) -> None:
-        ok, msg = check_tiddlywiki(self.bin_edit.text())
-        if ok:
-            QMessageBox.information(
-                self,
-                "Success",
-                f"TiddlyWiki detected successfully.\nVersion:\t{msg}",
-            )
-        else:
-            QMessageBox.critical(
-                self,
-                "Error",
-                f"TiddlyWiki check failed.\n{msg}",
-            )
-
-    # -- public API --
-    def apply_to(self, cfg: PluginConfig) -> None:
-        cfg.tiddlywiki_bin = resolve_tiddlywiki_bin(self.bin_edit.text())
 
 
 # ---------------------------------------------------------------------------
@@ -249,8 +215,127 @@ class EnvironmentTab(_BaseTab):
 # ---------------------------------------------------------------------------
 
 _COL_ENABLED = 0
-_COL_PATH = 1
-_COL_TYPE = 2
+_COL_NAME = 1
+_COL_PATH = 2
+_COL_API = 3
+_COL_TYPE = 4
+
+
+def detect_wiki_type(path: str) -> tuple[str | None, str]:
+    """Validate a wiki path and return (wiki_type, error_message).
+
+    HTML file  -> ("HTML", "")
+    directory  -> checks for tiddlywiki.info, then ("DIRECTORY", "")
+    otherwise  -> (None, reason)
+    """
+    if os.path.isfile(path) and path.lower().endswith((".html", ".htm")):
+        return "HTML", ""
+    if os.path.isdir(path):
+        if os.path.isfile(os.path.join(path, "tiddlywiki.info")):
+            return "DIRECTORY", ""
+        return None, "Not a TiddlyWiki working directory (tiddlywiki.info not found)."
+    return None, "Path is neither an HTML file nor an existing directory."
+
+
+class _WikiDialog(QDialog):
+    """Add/Edit dialog for a single WikiSource. Validates path on accept."""
+
+    def __init__(self, wiki: WikiSource | None = None, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Edit Wiki Source" if wiki is not None else "Add Wiki Source")
+        self.resize(520, 0)
+        self._result: WikiSource | None = None
+        self._enabled = wiki.enabled if wiki is not None else True
+
+        name = wiki.name if wiki is not None else ""
+        path = wiki.path if wiki is not None else ""
+        api = wiki.api_url if wiki is not None else "http://127.0.0.1:8080"
+
+        self.name_edit = QLineEdit(name)
+        self.name_edit.setPlaceholderText("e.g. My TiddlyWiki")
+
+        self.path_edit = QLineEdit(path)
+        html_btn = QPushButton("HTML file...")
+        html_btn.clicked.connect(self._pick_html_file)
+        folder_btn = QPushButton("Folder...")
+        folder_btn.clicked.connect(self._pick_folder)
+
+        self.api_edit = QLineEdit(api)
+        self.api_edit.setPlaceholderText("http://127.0.0.1:8080")
+
+        root = QVBoxLayout(self)
+        root.setContentsMargins(16, 16, 16, 16)
+        root.setSpacing(12)
+        root.addLayout(_field_row("Wiki name", self.name_edit))
+
+        path_row = QHBoxLayout()
+        path_row.setSpacing(8)
+        lab = QLabel("Wiki path")
+        lab.setFixedWidth(150)
+        path_row.addWidget(lab)
+        path_row.addWidget(self.path_edit, stretch=1)
+        html_btn.setFixedWidth(95)
+        folder_btn.setFixedWidth(75)
+        path_row.addWidget(html_btn)
+        path_row.addWidget(folder_btn)
+        root.addLayout(path_row)
+
+        root.addLayout(_field_row("API URL", self.api_edit))
+
+        btn_row = QHBoxLayout()
+        btn_row.addStretch()
+        ok_btn = QPushButton("OK")
+        ok_btn.setDefault(True)
+        ok_btn.clicked.connect(self.accept)
+        cancel_btn = QPushButton("Cancel")
+        cancel_btn.clicked.connect(self.reject)
+        btn_row.addWidget(ok_btn)
+        btn_row.addWidget(cancel_btn)
+        root.addLayout(btn_row)
+
+    def _pick_html_file(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select TiddlyWiki HTML file",
+            "",
+            "HTML files (*.html *.htm);;All files (*)",
+        )
+        if path:
+            self.path_edit.setText(path)
+
+    def _pick_folder(self) -> None:
+        path = QFileDialog.getExistingDirectory(self, "Select a TiddlyWiki folder")
+        if path:
+            self.path_edit.setText(path)
+
+    def accept(self) -> None:
+        name = self.name_edit.text().strip()
+        path = self.path_edit.text().strip()
+        api = self.api_edit.text().strip()
+
+        if not name:
+            QMessageBox.warning(self, "Missing field", "Wiki name cannot be empty.")
+            return
+        if not path:
+            QMessageBox.warning(self, "Missing field", "Wiki path cannot be empty.")
+            return
+
+        wiki_type, msg = detect_wiki_type(path)
+        if wiki_type is None:
+            QMessageBox.warning(self, "Invalid path", msg)
+            return
+
+        self._result = WikiSource(
+            name=name,
+            path=path,
+            type=wiki_type,
+            api_url=api or "http://127.0.0.1:8080",
+            enabled=self._enabled,
+        )
+        super().accept()
+
+    def result_wiki(self) -> WikiSource:
+        return self._result
 
 
 class WikisTab(_BaseTab):
@@ -259,14 +344,22 @@ class WikisTab(_BaseTab):
     def _build_ui(self) -> None:
         layout = self._vbox()
 
-        self.table = QTableWidget(0, 3)
-        self.table.setHorizontalHeaderLabels(["", "Path", "Type"])
+        self.bin_edit = QLineEdit(self._cfg.tiddlywiki_bin)
+        self.bin_edit.setPlaceholderText("Leave empty to auto-detect")
+        test_btn = QPushButton("Test")
+        test_btn.clicked.connect(self._on_test)
+        layout.addLayout(_field_row("TiddlyWiki Binary", self.bin_edit, test_btn))
+
+        self.table = QTableWidget(0, 5)
+        self.table.setHorizontalHeaderLabels(["", "Name", "Path", "API URL", "Type"])
         header = self.table.horizontalHeader()
         assert header is not None  # QTableWidget 始终有 header
         header.setSectionResizeMode(
             _COL_ENABLED, QHeaderView.ResizeMode.ResizeToContents
         )
+        header.setSectionResizeMode(_COL_NAME, QHeaderView.ResizeMode.ResizeToContents)
         header.setSectionResizeMode(_COL_PATH, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(_COL_API, QHeaderView.ResizeMode.ResizeToContents)
         header.setSectionResizeMode(_COL_TYPE, QHeaderView.ResizeMode.ResizeToContents)
         self.table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self.table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
@@ -279,9 +372,9 @@ class WikisTab(_BaseTab):
         btn_row = QHBoxLayout()
         btn_row.addStretch()
         for text, slot in (
-            ("Add HTML", self._on_add_html),
-            ("Add Folder", self._on_add_folder),
-            ("Remove", self._on_remove),
+            ("Add", self._on_add),
+            ("Edit", self._on_edit),
+            ("Delete", self._on_remove),
         ):
             btn = QPushButton(text)
             btn.clicked.connect(slot)
@@ -292,14 +385,38 @@ class WikisTab(_BaseTab):
     def _populate(self) -> None:
         self.table.setRowCount(0)
         for wiki in self._cfg.wikis:
-            self._add_row(wiki.path, wiki.type, wiki.enabled)
+            self._append_row(wiki)
 
-    def _add_row(self, path: str, wiki_type: str, enabled: bool = True) -> None:
+    def _append_row(self, wiki: WikiSource) -> None:
         row = self.table.rowCount()
         self.table.insertRow(row)
-        self.table.setCellWidget(row, _COL_ENABLED, self._checkbox_cell(enabled))
-        self.table.setItem(row, _COL_PATH, QTableWidgetItem(path))
-        self.table.setItem(row, _COL_TYPE, QTableWidgetItem(wiki_type))
+        self._set_row(row, wiki)
+
+    def _set_row(self, row: int, wiki: WikiSource) -> None:
+        self.table.setCellWidget(row, _COL_ENABLED, self._checkbox_cell(wiki.enabled))
+        self.table.setItem(row, _COL_NAME, QTableWidgetItem(wiki.name))
+        self.table.setItem(row, _COL_PATH, QTableWidgetItem(wiki.path))
+        self.table.setItem(row, _COL_API, QTableWidgetItem(wiki.api_url))
+        self.table.setItem(row, _COL_TYPE, QTableWidgetItem(wiki.type))
+
+    def _row_to_wiki(self, row: int) -> WikiSource:
+        def _text(col: int) -> str:
+            item = self.table.item(row, col)
+            return item.text() if item is not None else ""
+
+        enabled = True
+        wrapper = self.table.cellWidget(row, _COL_ENABLED)
+        if wrapper is not None:
+            chk = wrapper.findChild(QCheckBox)
+            if chk is not None:
+                enabled = chk.isChecked()
+        return WikiSource(
+            name=_text(_COL_NAME),
+            path=_text(_COL_PATH),
+            api_url=_text(_COL_API),
+            type=_text(_COL_TYPE) or "folder",
+            enabled=enabled,
+        )
 
     @staticmethod
     def _checkbox_cell(enabled: bool) -> QWidget:
@@ -313,54 +430,38 @@ class WikisTab(_BaseTab):
         box.setContentsMargins(0, 0, 0, 0)
         return wrapper
 
-    def _on_add_html(self) -> None:
-        path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Select TiddlyWiki HTML file",
-            "",
-            "HTML files (*.html *.htm);;All files (*)",
-        )
-        if path:
-            self._add_row(path, "html")
+    def _on_test(self) -> None:
+        ok, msg = check_tiddlywiki(self.bin_edit.text())
+        if ok:
+            QMessageBox.information(
+                self, "Success", f"TiddlyWiki detected successfully.\nVersion:\t{msg}"
+            )
+        else:
+            QMessageBox.critical(self, "Error", f"TiddlyWiki check failed.\n{msg}")
 
-    def _on_add_folder(self) -> None:
-        path = QFileDialog.getExistingDirectory(
-            self,
-            "Select TiddlyWiki folder",
-            "",
-        )
-        if path:
-            self._add_row(path, "folder")
+    def _on_add(self) -> None:
+        dlg = _WikiDialog(parent=self)
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            self._append_row(dlg.result_wiki())
+
+    def _on_edit(self) -> None:
+        row = self.table.currentRow()
+        if row < 0:
+            QMessageBox.information(self, "No selection", "Please select a row to edit.")
+            return
+        dlg = _WikiDialog(wiki=self._row_to_wiki(row), parent=self)
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            self._set_row(row, dlg.result_wiki())
 
     def _on_remove(self) -> None:
-        selected = self.table.selectedItems()
-        if not selected:
-            return
         row = self.table.currentRow()
         if row >= 0:
             self.table.removeRow(row)
 
     # -- public API --
     def apply_to(self, cfg: PluginConfig) -> None:
-        wikis: list[WikiSource] = []
-        for row in range(self.table.rowCount()):
-            path_item = self.table.item(row, _COL_PATH)
-            type_item = self.table.item(row, _COL_TYPE)
-            wrapper = self.table.cellWidget(row, _COL_ENABLED)
-            enabled = True
-            if wrapper is not None:
-                chk = wrapper.findChild(QCheckBox)
-                if chk is not None:
-                    enabled = chk.isChecked()
-            if path_item:
-                wikis.append(
-                    WikiSource(
-                        path=path_item.text(),
-                        type=type_item.text() if type_item else "folder",
-                        enabled=enabled,
-                    )
-                )
-        cfg.wikis = wikis
+        cfg.tiddlywiki_bin = resolve_tiddlywiki_bin(self.bin_edit.text())
+        cfg.wikis = [self._row_to_wiki(row) for row in range(self.table.rowCount())]
 
 
 # ---------------------------------------------------------------------------
@@ -397,32 +498,7 @@ class CardStyleTab(_BaseTab):
         cfg.custom_css = self.css_edit.toPlainText()
 
 
-# ---------------------------------------------------------------------------
-# API Tab
-# ---------------------------------------------------------------------------
 
-
-class ApiTab(_BaseTab):
-    def _build_ui(self) -> None:
-        layout = self._vbox()
-
-        self.url_edit = QLineEdit(self._cfg.api_url)
-        self.url_edit.setPlaceholderText("http://127.0.0.1:8080")
-        layout.addLayout(_field_row("Local API URL", self.url_edit, label_width=120))
-
-        hint = QLabel(
-            "Used to open tiddlers in the browser, e.g.:\n"
-            "http://localhost:8080/#/tiddler/&lt;title&gt;"
-        )
-        hint.setStyleSheet("color: gray; font-size: 11px;")
-        hint.setTextFormat(Qt.TextFormat.RichText)
-        layout.addWidget(hint)
-
-        layout.addStretch()
-
-    # -- public API --
-    def apply_to(self, cfg: PluginConfig) -> None:
-        cfg.api_url = self.url_edit.text().strip()
 
 
 # ---------------------------------------------------------------------------
@@ -448,15 +524,11 @@ class ConfigDialog(QDialog):
         # ── Tab widget ──
         tabs = QTabWidget()
 
-        self._env_tab = EnvironmentTab(self._cfg)
         self._wikis_tab = WikisTab(self._cfg)
         self._style_tab = CardStyleTab(self._cfg)
-        self._api_tab = ApiTab(self._cfg)
 
-        tabs.addTab(self._env_tab, "Environment")
         tabs.addTab(self._wikis_tab, "Wikis")
         tabs.addTab(self._style_tab, "Card Style")
-        tabs.addTab(self._api_tab, "API")
 
         root.addWidget(tabs, stretch=1)
 
@@ -476,10 +548,8 @@ class ConfigDialog(QDialog):
         root.addLayout(btn_row)
 
     def _on_save(self) -> None:
-        self._env_tab.apply_to(self._cfg)
         self._wikis_tab.apply_to(self._cfg)
         self._style_tab.apply_to(self._cfg)
-        self._api_tab.apply_to(self._cfg)
         save_config(self._cfg)
         self.accept()
 
