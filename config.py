@@ -57,6 +57,7 @@ class PluginConfig:
 
     # 可变默认值必须用 default_factory，否则会在多个实例之间共享同一个 list。
     wikis: list[WikiSource] = field(default_factory=list)
+    custom_css: str = ""
     card_css: str = ""
     api_url: str = "http://127.0.0.1:8080"
 
@@ -69,7 +70,7 @@ class PluginConfig:
         return cls(
             tiddlywiki_bin=_get("tiddlywiki_bin"),
             wikis=[WikiSource.from_dict(w) for w in _get("wikis")],
-            card_css=_get("card_css"),
+            custom_css=_get("custom_css"),
             api_url=_get("api_url"),
         )
 
@@ -77,7 +78,7 @@ class PluginConfig:
         return {
             "tiddlywiki_bin": self.tiddlywiki_bin,
             "wikis": [w.to_dict() for w in self.wikis],
-            "card_css": self.card_css,
+            "custom_css": self.custom_css,
             "api_url": self.api_url,
         }
 
@@ -90,7 +91,7 @@ DEFAULT_CONFIG: dict = {
     # 落盘到 Anki 配置系统里的 dict 结构。
     "tiddlywiki_bin": "",
     "wikis": [],
-    "card_css": "",
+    "custom_css": "",
     "api_url": "http://127.0.0.1:8080",
 }
 
@@ -378,7 +379,7 @@ class CardStyleTab(_BaseTab):
 
         layout.addWidget(QLabel("Card CSS"))
 
-        self.css_edit = QPlainTextEdit(self._cfg.card_css)
+        self.css_edit = QPlainTextEdit(self._cfg.custom_css)
         self.css_edit.setPlaceholderText(
             "/* CSS injected into Anki card templates */\n"
             ".card {\n"
@@ -396,7 +397,7 @@ class CardStyleTab(_BaseTab):
 
     # -- public API --
     def apply_to(self, cfg: PluginConfig) -> None:
-        cfg.card_css = self.css_edit.toPlainText()
+        cfg.custom_css = self.css_edit.toPlainText()
 
 
 # ---------------------------------------------------------------------------
