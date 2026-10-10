@@ -32,27 +32,33 @@ from aqt.qt import (
 # ---------------------------------------------------------------------------
 
 
+DEFAULT_API_URL = "http://127.0.0.1:8080"
+WIKI_TYPE_HTML = "html"
+WIKI_TYPE_FOLDER = "folder"
+
+
 @dataclass(slots=True)
 class WikiSource:
-    # Wiki来源，（会被序列化到 Anki 的 add-on config 里）。
+    # Wiki 来源（会被序列化到 Anki 的 add-on config 里）。
     name: str
-    path: str   # wiki path
-    type: str   # wiki type "folder" or "html"
+    path: str  # wiki path
+    type: str  # wiki type: WIKI_TYPE_HTML / WIKI_TYPE_FOLDER
     api_url: str
-    enabled: bool = True # enable wiki or not
+    enabled: bool = True  # enable wiki or not
 
     @classmethod
     def from_dict(cls, raw: dict) -> "WikiSource":
         return cls(
-            name=raw.get("name",""),
+            name=raw.get("name", ""),
             path=raw.get("path", ""),
-            type=raw.get("type", "folder"),
-            api_url=raw.get("api_url", "https://127.0.0.1:8080"),
+            type=raw.get("type", WIKI_TYPE_FOLDER),
+            api_url=raw.get("api_url", DEFAULT_API_URL),
             enabled=raw.get("enabled", True),
         )
 
     def to_dict(self) -> dict:
         return asdict(self)
+
 
 @dataclass(slots=True)
 class PluginConfig:
@@ -75,11 +81,7 @@ class PluginConfig:
         )
 
     def to_dict(self) -> dict:
-        return {
-            "tiddlywiki_bin": self.tiddlywiki_bin,
-            "wikis": [w.to_dict() for w in self.wikis],
-            "custom_css": self.custom_css,
-        }
+        return asdict(self)
 
 
 # ---------------------------------------------------------------------------
@@ -107,6 +109,7 @@ def save_config(cfg: PluginConfig) -> None:
     # writeConfig 接受 JSON-like 的 dict；所以这里把 dataclass 再转换回 dict。
     # 用户配置，会以JSON文件的方式，被保存到当前文件夹下的meta.json文件中
     mw.addonManager.writeConfig(__name__, cfg.to_dict())
+
 
 # ---------------------------------------------------------------------------
 # TiddlyWiki detection
@@ -158,22 +161,23 @@ def check_tiddlywiki(path: str) -> tuple[bool, str]:
 def _field_row(
     label: str,
     edit: QLineEdit,
-    button: QPushButton | None = None,
+    buttons: QPushButton | list[QPushButton] | None = None,
     label_width: int = 150,
 ) -> QHBoxLayout:
-    """“label + 输入框(+按钮)” 水平行，供 Environment/API tab 复用。"""
+    """ "label + 输入框(+按钮)" 水平行，供各 tab 复用。"""
     row = QHBoxLayout()
     row.setSpacing(8)
 
     lab = QLabel(label)
     lab.setFixedWidth(label_width)
     row.addWidget(lab)
-
     row.addWidget(edit, stretch=1)
 
-    if button is not None:
-        button.setFixedWidth(70)
-        row.addWidget(button)
+    if buttons is not None:
+        if not isinstance(buttons, list):
+            buttons = [buttons]
+        for btn in buttons:
+            row.addWidget(btn)
 
     return row
 
@@ -207,9 +211,6 @@ class _BaseTab(QWidget):
         raise NotImplementedError
 
 
-
-
-
 # ---------------------------------------------------------------------------
 # Wikis Tab
 # ---------------------------------------------------------------------------
@@ -224,15 +225,15 @@ _COL_TYPE = 4
 def detect_wiki_type(path: str) -> tuple[str | None, str]:
     """Validate a wiki path and return (wiki_type, error_message).
 
-    HTML file  -> ("HTML", "")
-    directory  -> checks for tiddlywiki.info, then ("DIRECTORY", "")
+    HTML file  -> (WIKI_TYPE_HTML, "")
+    directory  -> checks for tiddlywiki.info, then (WIKI_TYPE_FOLDER, "")
     otherwise  -> (None, reason)
     """
     if os.path.isfile(path) and path.lower().endswith((".html", ".htm")):
-        return "HTML", ""
+        return WIKI_TYPE_HTML, ""
     if os.path.isdir(path):
         if os.path.isfile(os.path.join(path, "tiddlywiki.info")):
-            return "DIRECTORY", ""
+            return WIKI_TYPE_FOLDER, ""
         return None, "Not a TiddlyWiki working directory (tiddlywiki.info not found)."
     return None, "Path is neither an HTML file nor an existing directory."
 
@@ -240,45 +241,41 @@ def detect_wiki_type(path: str) -> tuple[str | None, str]:
 class _WikiDialog(QDialog):
     """Add/Edit dialog for a single WikiSource. Validates path on accept."""
 
-    def __init__(self, wiki: WikiSource | None = None, parent: QWidget | None = None) -> None:
+    def __init__(
+        self, wiki: WikiSource | None = None, parent: QWidget | None = None
+    ) -> None:
         super().__init__(parent)
-        self.setWindowTitle("Edit Wiki Source" if wiki is not None else "Add Wiki Source")
+        self.setWindowTitle(
+            "Edit Wiki Source" if wiki is not None else "Add Wiki Source"
+        )
         self.resize(520, 0)
         self._result: WikiSource | None = None
         self._enabled = wiki.enabled if wiki is not None else True
 
         name = wiki.name if wiki is not None else ""
         path = wiki.path if wiki is not None else ""
-        api = wiki.api_url if wiki is not None else "http://127.0.0.1:8080"
+        api = wiki.api_url if wiki is not None else DEFAULT_API_URL
 
         self.name_edit = QLineEdit(name)
         self.name_edit.setPlaceholderText("e.g. My TiddlyWiki")
 
         self.path_edit = QLineEdit(path)
         html_btn = QPushButton("HTML file...")
+        html_btn.setFixedWidth(95)
         html_btn.clicked.connect(self._pick_html_file)
         folder_btn = QPushButton("Folder...")
+        folder_btn.setFixedWidth(75)
         folder_btn.clicked.connect(self._pick_folder)
 
         self.api_edit = QLineEdit(api)
-        self.api_edit.setPlaceholderText("http://127.0.0.1:8080")
+        self.api_edit.setPlaceholderText(DEFAULT_API_URL)
 
         root = QVBoxLayout(self)
         root.setContentsMargins(16, 16, 16, 16)
         root.setSpacing(12)
         root.addLayout(_field_row("Wiki name", self.name_edit))
 
-        path_row = QHBoxLayout()
-        path_row.setSpacing(8)
-        lab = QLabel("Wiki path")
-        lab.setFixedWidth(150)
-        path_row.addWidget(lab)
-        path_row.addWidget(self.path_edit, stretch=1)
-        html_btn.setFixedWidth(95)
-        folder_btn.setFixedWidth(75)
-        path_row.addWidget(html_btn)
-        path_row.addWidget(folder_btn)
-        root.addLayout(path_row)
+        root.addLayout(_field_row("Wiki path", self.path_edit, [html_btn, folder_btn]))
 
         root.addLayout(_field_row("API URL", self.api_edit))
 
@@ -329,12 +326,14 @@ class _WikiDialog(QDialog):
             name=name,
             path=path,
             type=wiki_type,
-            api_url=api or "http://127.0.0.1:8080",
+            api_url=api or DEFAULT_API_URL,
             enabled=self._enabled,
         )
         super().accept()
 
     def result_wiki(self) -> WikiSource:
+        # 仅在 exec() 返回 Accepted 后调用；届时 _result 必然非空。
+        assert self._result is not None
         return self._result
 
 
@@ -414,7 +413,7 @@ class WikisTab(_BaseTab):
             name=_text(_COL_NAME),
             path=_text(_COL_PATH),
             api_url=_text(_COL_API),
-            type=_text(_COL_TYPE) or "folder",
+            type=_text(_COL_TYPE) or WIKI_TYPE_FOLDER,
             enabled=enabled,
         )
 
@@ -447,7 +446,9 @@ class WikisTab(_BaseTab):
     def _on_edit(self) -> None:
         row = self.table.currentRow()
         if row < 0:
-            QMessageBox.information(self, "No selection", "Please select a row to edit.")
+            QMessageBox.information(
+                self, "No selection", "Please select a row to edit."
+            )
             return
         dlg = _WikiDialog(wiki=self._row_to_wiki(row), parent=self)
         if dlg.exec() == QDialog.DialogCode.Accepted:
@@ -498,9 +499,6 @@ class CardStyleTab(_BaseTab):
         cfg.custom_css = self.css_edit.toPlainText()
 
 
-
-
-
 # ---------------------------------------------------------------------------
 # Config Dialog
 # ---------------------------------------------------------------------------
@@ -548,8 +546,8 @@ class ConfigDialog(QDialog):
         root.addLayout(btn_row)
 
     def _on_save(self) -> None:
-        self._wikis_tab.apply_to(self._cfg)
-        self._style_tab.apply_to(self._cfg)
+        for tab in (self._wikis_tab, self._style_tab):
+            tab.apply_to(self._cfg)
         save_config(self._cfg)
         self.accept()
 
@@ -560,5 +558,4 @@ class ConfigDialog(QDialog):
 
 
 def open_config_dialog() -> None:
-    dlg = ConfigDialog(mw)
-    dlg.exec()
+    ConfigDialog().exec()
