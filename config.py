@@ -4,7 +4,7 @@ TiddlyFlashcards Plugin Config Dialog
 
 import shutil
 import subprocess
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 
 from aqt import mw
 from aqt.qt import (
@@ -34,32 +34,32 @@ from aqt.qt import (
 @dataclass(slots=True)
 class WikiSource:
     # Wiki来源，（会被序列化到 Anki 的 add-on config 里）。
-    path: str
-    type: str  # "folder" or "html"
-    enabled: bool = True
+    name: str
+    path: str   # wiki path
+    type: str   # wiki type "folder" or "html"
+    api_url: str
+    enabled: bool = True # enable wiki or not
 
     @classmethod
     def from_dict(cls, raw: dict) -> "WikiSource":
         return cls(
+            name=raw.get("name",""),
             path=raw.get("path", ""),
             type=raw.get("type", "folder"),
+            api_url=raw.get("api_url", "https://127.0.0.1:8080"),
             enabled=raw.get("enabled", True),
         )
 
     def to_dict(self) -> dict:
-        return {"path": self.path, "type": self.type, "enabled": self.enabled}
-
+        return asdict(self)
 
 @dataclass(slots=True)
 class PluginConfig:
-    # 用 dataclass 做“内存中的配置模型”，读取/保存时再转成 dict（更好类型提示、也更易重构）。
+    # 用 dataclass 做“内存中的配置模型”。
     tiddlywiki_bin: str = ""
 
-    # 可变默认值必须用 default_factory，否则会在多个实例之间共享同一个 list。
     wikis: list[WikiSource] = field(default_factory=list)
     custom_css: str = ""
-    card_css: str = ""
-    api_url: str = "http://127.0.0.1:8080"
 
     @classmethod
     def from_dict(cls, raw: dict) -> "PluginConfig":
@@ -71,7 +71,6 @@ class PluginConfig:
             tiddlywiki_bin=_get("tiddlywiki_bin"),
             wikis=[WikiSource.from_dict(w) for w in _get("wikis")],
             custom_css=_get("custom_css"),
-            api_url=_get("api_url"),
         )
 
     def to_dict(self) -> dict:
@@ -79,7 +78,6 @@ class PluginConfig:
             "tiddlywiki_bin": self.tiddlywiki_bin,
             "wikis": [w.to_dict() for w in self.wikis],
             "custom_css": self.custom_css,
-            "api_url": self.api_url,
         }
 
 
@@ -109,7 +107,6 @@ def save_config(cfg: PluginConfig) -> None:
     # writeConfig 接受 JSON-like 的 dict；所以这里把 dataclass 再转换回 dict。
     # 用户配置，会以JSON文件的方式，被保存到当前文件夹下的meta.json文件中
     mw.addonManager.writeConfig(__name__, cfg.to_dict())
-
 
 # ---------------------------------------------------------------------------
 # TiddlyWiki detection
