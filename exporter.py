@@ -110,7 +110,9 @@ class NoteSource:
 @dataclass(slots=True)
 class WikiExportData:
     """单个 wiki 的导出产物：来源路径 + notetype 定义 + 卡片数据。"""
-
+    name: str
+    url: str
+    enabled: bool
     path: str
     model_source: list[ModelSource]
     notes: list[NoteSource]
@@ -140,6 +142,9 @@ class WikiExporter:
         wiki_path = self._validate_source(source)
         rendered = self._render_json(wiki_path, source.type)
         return WikiExportData(
+            name=source.name,
+            url=source.url,
+            enabled=source.enabled,
             path=source.path,
             model_source=ModelSource.from_json(rendered),
             notes=NoteSource.from_json(rendered),
