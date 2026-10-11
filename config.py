@@ -32,7 +32,7 @@ from aqt.qt import (
 # ---------------------------------------------------------------------------
 
 
-DEFAULT_API_URL = "http://127.0.0.1:8080"
+DEFAULT_URL = "http://127.0.0.1:8080"
 WIKI_TYPE_HTML = "html"
 WIKI_TYPE_FOLDER = "folder"
 
@@ -43,7 +43,7 @@ class WikiSource:
     name: str
     path: str  # wiki path
     type: str  # wiki type: WIKI_TYPE_HTML / WIKI_TYPE_FOLDER
-    api_url: str
+    url: str
     enabled: bool = True  # enable wiki or not
 
     @classmethod
@@ -52,7 +52,7 @@ class WikiSource:
             name=raw.get("name", ""),
             path=raw.get("path", ""),
             type=raw.get("type", WIKI_TYPE_FOLDER),
-            api_url=raw.get("api_url", DEFAULT_API_URL),
+            url=raw.get("url", DEFAULT_URL),
             enabled=raw.get("enabled", True),
         )
 
@@ -63,9 +63,9 @@ class WikiSource:
 @dataclass(slots=True)
 class PluginConfig:
     # 用 dataclass 做“内存中的配置模型”。
-    tiddlywiki_bin: str = ""
+    tiddlywiki_path: str = ""
 
-    wikis: list[WikiSource] = field(default_factory=list)
+    wiki_sources: list[WikiSource] = field(default_factory=list)
     custom_css: str = ""
 
     @classmethod
@@ -75,8 +75,8 @@ class PluginConfig:
             return raw.get(key, DEFAULT_CONFIG[key])
 
         return cls(
-            tiddlywiki_bin=_get("tiddlywiki_bin"),
-            wikis=[WikiSource.from_dict(w) for w in _get("wikis")],
+            tiddlywiki_path=_get("tiddlywiki_path"),
+            wiki_sources=[WikiSource.from_dict(w) for w in _get("wiki_sources")],
             custom_css=_get("custom_css"),
         )
 
@@ -90,8 +90,8 @@ class PluginConfig:
 
 DEFAULT_CONFIG: dict = {
     # 落盘到 Anki 配置系统里的 dict 结构。
-    "tiddlywiki_bin": "",
-    "wikis": [],
+    "tiddlywiki_path": "",
+    "wiki_sources": [],
     "custom_css": "",
 }
 
@@ -116,7 +116,7 @@ def save_config(cfg: PluginConfig) -> None:
 # ---------------------------------------------------------------------------
 
 
-def resolve_tiddlywiki_bin(path: str) -> str:
+def resolve_tiddlywiki_path(path: str) -> str:
     """路径为空时自动探测；返回实际可用的二进制路径。"""
     return path.strip() or shutil.which("tiddlywiki") or "tiddlywiki"
 
@@ -128,7 +128,7 @@ def check_tiddlywiki(path: str) -> tuple[bool, str]:
     Returns (success: bool, message: str).
     """
 
-    bin_path = resolve_tiddlywiki_bin(path)
+    bin_path = resolve_tiddlywiki_path(path)
 
     try:
         # subprocess.run 传 list 参数可以避免 shell=True 带来的转义/注入问题。
@@ -254,7 +254,7 @@ class _WikiDialog(QDialog):
 
         name = wiki.name if wiki is not None else ""
         path = wiki.path if wiki is not None else ""
-        api = wiki.api_url if wiki is not None else DEFAULT_API_URL
+        api = wiki.url if wiki is not None else DEFAULT_URL
 
         self.name_edit = QLineEdit(name)
         self.name_edit.setPlaceholderText("e.g. My TiddlyWiki")
@@ -268,7 +268,7 @@ class _WikiDialog(QDialog):
         folder_btn.clicked.connect(self._pick_folder)
 
         self.api_edit = QLineEdit(api)
-        self.api_edit.setPlaceholderText(DEFAULT_API_URL)
+        self.api_edit.setPlaceholderText(DEFAULT_URL)
 
         root = QVBoxLayout(self)
         root.setContentsMargins(16, 16, 16, 16)
@@ -326,7 +326,7 @@ class _WikiDialog(QDialog):
             name=name,
             path=path,
             type=wiki_type,
-            api_url=api or DEFAULT_API_URL,
+            url=api or DEFAULT_URL,
             enabled=self._enabled,
         )
         super().accept()
@@ -343,7 +343,7 @@ class WikisTab(_BaseTab):
     def _build_ui(self) -> None:
         layout = self._vbox()
 
-        self.bin_edit = QLineEdit(self._cfg.tiddlywiki_bin)
+        self.bin_edit = QLineEdit(self._cfg.tiddlywiki_path)
         self.bin_edit.setPlaceholderText("Leave empty to auto-detect")
         test_btn = QPushButton("Test")
         test_btn.clicked.connect(self._on_test)
@@ -383,7 +383,7 @@ class WikisTab(_BaseTab):
 
     def _populate(self) -> None:
         self.table.setRowCount(0)
-        for wiki in self._cfg.wikis:
+        for wiki in self._cfg.wiki_sources:
             self._append_row(wiki)
 
     def _append_row(self, wiki: WikiSource) -> None:
@@ -395,7 +395,7 @@ class WikisTab(_BaseTab):
         self.table.setCellWidget(row, _COL_ENABLED, self._checkbox_cell(wiki.enabled))
         self.table.setItem(row, _COL_NAME, QTableWidgetItem(wiki.name))
         self.table.setItem(row, _COL_PATH, QTableWidgetItem(wiki.path))
-        self.table.setItem(row, _COL_API, QTableWidgetItem(wiki.api_url))
+        self.table.setItem(row, _COL_API, QTableWidgetItem(wiki.url))
         self.table.setItem(row, _COL_TYPE, QTableWidgetItem(wiki.type))
 
     def _row_to_wiki(self, row: int) -> WikiSource:
@@ -412,7 +412,7 @@ class WikisTab(_BaseTab):
         return WikiSource(
             name=_text(_COL_NAME),
             path=_text(_COL_PATH),
-            api_url=_text(_COL_API),
+            url=_text(_COL_API),
             type=_text(_COL_TYPE) or WIKI_TYPE_FOLDER,
             enabled=enabled,
         )
@@ -461,8 +461,8 @@ class WikisTab(_BaseTab):
 
     # -- public API --
     def apply_to(self, cfg: PluginConfig) -> None:
-        cfg.tiddlywiki_bin = resolve_tiddlywiki_bin(self.bin_edit.text())
-        cfg.wikis = [self._row_to_wiki(row) for row in range(self.table.rowCount())]
+        cfg.tiddlywiki_path = resolve_tiddlywiki_path(self.bin_edit.text())
+        cfg.wiki_sources = [self._row_to_wiki(row) for row in range(self.table.rowCount())]
 
 
 # ---------------------------------------------------------------------------

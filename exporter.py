@@ -114,8 +114,8 @@ class WikiExportData:
     url: str
     enabled: bool
     path: str
-    model_source: list[ModelSource]
-    notes: list[NoteSource]
+    model_sources: list[ModelSource]
+    note_sources: list[NoteSource]
 
 
 # ---------------------------------------------------------------------------
@@ -146,8 +146,8 @@ class WikiExporter:
             url=source.url,
             enabled=source.enabled,
             path=source.path,
-            model_source=ModelSource.from_json(rendered),
-            notes=NoteSource.from_json(rendered),
+            model_sources=ModelSource.from_json(rendered),
+            note_sources=NoteSource.from_json(rendered),
         )
 
     # -- 内部辅助 --
@@ -258,7 +258,7 @@ class WikiManager:
             data = self.export_one(source)
             results.append(data)
 
-            for note in data.notes:
+            for note in data.note_sources:
                 if note.tf_id in seen:
                     showWarning(
                         "TiddlyFlashcards found a duplicate TFNoteId and kept the "
@@ -267,7 +267,7 @@ class WikiManager:
                     continue
                 seen.add(note.tf_id)
 
-        if not any(data.notes for data in results):
+        if not any(data.note_sources for data in results):
             _raise_empty_export(sources)
 
         return results
