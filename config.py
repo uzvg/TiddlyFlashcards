@@ -70,7 +70,7 @@ class PluginConfig:
 
     @classmethod
     def from_dict(cls, raw: dict) -> "PluginConfig":
-        # 缺失字段回退到 DEFAULT_CONFIG，兼容手改 config.json 造成的缺键情况。
+        # 缺失字段回退到 DEFAULT_CONFIG，兼容手改 meta.json 造成的缺键情况。
         def _get(key: str):
             return raw.get(key, DEFAULT_CONFIG[key])
 
