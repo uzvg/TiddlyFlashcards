@@ -15,107 +15,46 @@ import os
 import shutil
 import subprocess
 import tempfile
-from dataclasses import dataclass, field
+from dataclasses import dataclass
+from collections import defaultdict
 from pathlib import Path
 from typing import Any, NoReturn
 
 from aqt.utils import showCritical, showWarning
 
 from .config import WIKI_TYPE_HTML, PluginConfig, WikiSource
+from .models import ModelSource, NoteSource
 
 # tiddlywiki 中生成 flashcards JSON 数据的导出模板
 RENDER_TEMPLATE = "$:/plugins/uzvg/TiddlyFlashcards/templates/tf-render-template"
+
+# tiddlywiki 导出子进程的超时时间（秒），防止进程卡死挂起 Anki 界面。
+EXPORT_TIMEOUT = 60
 
 
 # ---------------------------------------------------------------------------
 # 结构化产物
 # ---------------------------------------------------------------------------
 
+@dataclass(slots=True)
+class ExportModel:
+    wiki_info: WikiSource
+    model_info: ModelSource
 
 @dataclass(slots=True)
-class ModelSource:
-    """一条 notetype 定义（对应 tf_models 中的一项）。"""
-
-    name: str
-    model_type: int = 0
-    fields: list[str] = field(default_factory=list)
-    templates: list[dict[str, Any]] = field(default_factory=list)
-
-    @classmethod
-    def from_dict(cls, name: str, raw: dict[str, Any]) -> ModelSource:
-        return cls(
-            name=name,
-            model_type=raw.get("model_type", 0),
-            fields=list(raw.get("fields", [])),
-            templates=list(raw.get("templates", [])),
-        )
-
-    @classmethod
-    def from_json(cls, raw: dict[str, Any]) -> list["ModelSource"]:
-        return [
-            cls.from_dict(name, cfg)
-            for name, cfg in raw.get("tf_models", {}).items()
-        ]
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "model_type": self.model_type,
-            "fields": self.fields,
-            "templates": self.templates,
-        }
-
-
-@dataclass(slots=True)
-class NoteSource:
-    """一张卡片（对应 tf_notes 中的一项），tf_id 为存储时的唯一键。"""
-
-    tf_id: str
-    fields: dict[str, str]
-    model_name: str
-    model_version: str = ""
-    deck: str = "TFDefault"
-    tags: list[str] = field(default_factory=list)
-    status: str = "active"
-
-    @classmethod
-    def from_dict(cls, tf_id: str, raw: dict[str, Any]) -> "NoteSource":
-        return cls(
-            tf_id=tf_id,
-            fields=raw.get("fields", {}),
-            model_name=raw.get("modelName", ""),
-            model_version=raw.get("modelVersion", ""),
-            deck=raw.get("deck", "TFDefault"),
-            tags=list(raw.get("tags", [])),
-            status=raw.get("status", "active"),
-        )
-
-    @classmethod
-    def from_json(cls, raw: dict[str, Any]) -> list["NoteSource"]:
-        return [
-            cls.from_dict(tf_id, cfg)
-            for tf_id, cfg in raw.get("tf_notes", {}).items()
-        ]
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "fields": self.fields,
-            "modelName": self.model_name,
-            "modelVersion": self.model_version,
-            "deck": self.deck,
-            "tags": self.tags,
-            "status": self.status,
-        }
-
+class ExportNote:
+    wiki_info: WikiSource
+    note_info: NoteSource
 
 @dataclass(slots=True)
 class WikiExportData:
-    """单个 wiki 的导出产物：来源路径 + notetype 定义 + 卡片数据。"""
-    name: str
-    url: str
-    enabled: bool
-    path: str
-    model_sources: list[ModelSource]
-    note_sources: list[NoteSource]
+    """单个 wiki 的导出产物：notetype 定义 + 卡片数据。
+
+    每条 model_sources / note_sources 均通过 wiki_info（WikiSource）携带
+    该 wiki 的 name、url、path，以及各自的 model_info / note_info。
+    """
+    model_sources: list[ExportModel]
+    note_sources: list[ExportNote]
 
 
 # ---------------------------------------------------------------------------
@@ -132,33 +71,43 @@ class WikiExporter:
     """
 
     def __init__(
-        self, tiddlywiki_path: str, template: str = RENDER_TEMPLATE
+        self,
+        tiddlywiki_path: str,
+        template: str = RENDER_TEMPLATE,
+        css: str = "",
     ) -> None:
         self.tiddlywiki_path = self._resolve_bin(tiddlywiki_path)
         self.template = template
+        self.css = css
 
     def export(self, source: WikiSource) -> WikiExportData:
         """导出单个 wiki，渲染结果解析为 WikiExportData。"""
-        wiki_path = self._validate_source(source)
-        rendered = self._render_json(wiki_path, source.type)
+        rendered = self._render_json(source)
+        models = ModelSource.from_json(rendered, self.css)
+        notes = NoteSource.from_json(rendered)
         return WikiExportData(
-            name=source.name,
-            url=source.url,
-            enabled=source.enabled,
-            path=source.path,
-            model_sources=ModelSource.from_json(rendered),
-            note_sources=NoteSource.from_json(rendered),
+            model_sources=[
+                ExportModel(wiki_info=source, model_info=model) for model in models
+            ],
+            note_sources=[
+                ExportNote(wiki_info=source, note_info=note) for note in notes
+            ],
         )
 
     # -- 内部辅助 --
 
     @staticmethod
     def _resolve_bin(configured_bin: str) -> str:
-        """空路径时自动探测；校验一次全局复用的 tiddlywiki 可执行文件。"""
-        bin_path = configured_bin.strip() or shutil.which("tiddlywiki")
-        if not bin_path or not shutil.which(bin_path):
-            raise FileNotFoundError(f"TiddlyWiki binary not found: {configured_bin}")
-        return bin_path
+        """空路径时自动探测，返回可执行文件的绝对路径。
+
+        通过一次 shutil.which 校验并解析：既能处理裸命令名（按 PATH 查找），
+        也能校验绝对/相对路径的存在与可执行性；失败时给出实际尝试的路径。
+        """
+        bin_path = configured_bin.strip() or "tiddlywiki"
+        resolved = shutil.which(bin_path)
+        if not resolved:
+            raise FileNotFoundError(f"TiddlyWiki binary not found: {bin_path}")
+        return resolved
 
     @staticmethod
     def _validate_source(source: WikiSource) -> Path:
@@ -191,34 +140,57 @@ class WikiExporter:
             base += [str(wiki_path)]
         return base + ["--render", self.template, output, "text/plain"]
 
-    def _render_json(self, wiki_path: Path, wiki_type: str) -> dict[str, Any]:
-        """执行渲染命令，读取临时文件并解析为 JSON（临时文件自动清理）。"""
+    def _render_json(self, source: WikiSource) -> dict[str, Any]:
+        """调用 tiddlywiki 渲染 schema，将结果解析为 JSON（临时文件自动清理）。"""
+        wiki_path = self._validate_source(source)
         fd, tmp_path = tempfile.mkstemp()
         os.close(fd)
 
         try:
             subprocess.run(
-                self._build_command(wiki_path, wiki_type, tmp_path),
+                self._build_command(wiki_path, source.type, tmp_path),
                 check=True,
                 capture_output=True,
                 text=True,
+                timeout=EXPORT_TIMEOUT,
             )
         except subprocess.CalledProcessError as exc:
             showCritical(f"TiddlyFlashcards export failed:\n\n{exc.stderr or exc}")
             raise RuntimeError("TiddlyWiki export failed") from exc
+        except subprocess.TimeoutExpired as exc:
+            showCritical(
+                f"TiddlyFlashcards export timed out for wiki '{source.name}'.\n\n"
+                "Please check whether TiddlyWiki is hung or the wiki is too large."
+            )
+            raise RuntimeError("TiddlyWiki export timed out") from exc
+        except OSError as exc:
+            # 二进制缺失、无执行权限等；避免裸 traceback 冒泡到同步流程。
+            showCritical(
+                "TiddlyFlashcards could not run the TiddlyWiki binary.\n\n"
+                f"Wiki: {source.name}\nPath: {source.path}\n\n{exc}"
+            )
+            raise RuntimeError("Failed to run TiddlyWiki") from exc
 
         try:
             with open(tmp_path, encoding="utf-8") as file:
                 output = file.read()
             # 没有卡片时，模板可能产生空文件；将其视为空结果而非 JSON 错误。
             if not output.strip():
-                return {}
+                showCritical(
+                    "TiddlyFlashcards received an empty render result from the "
+                    "template. The wiki file may be corrupted.\n\n"
+                    f"Wiki: {source.name}\nPath: {source.path}"
+                )
+                raise RuntimeError("TiddlyWiki export produced empty output")
+
             return json.loads(output)
         except json.JSONDecodeError:
             showCritical(
                 "Invalid JSON output from TiddlyFlashcards. "
-                "Please check your template output."
+                "Please check your template output.\n\n"
+                f"Wiki: {source.name}\nPath: {source.path}"
             )
+
             raise
         finally:
             Path(tmp_path).unlink(missing_ok=True)
@@ -245,40 +217,115 @@ class WikiManager:
     def export_all(self) -> list[WikiExportData]:
         """导出所有启用 wiki，按配置顺序返回其 WikiExportData。
 
-        跨 wiki 出现重复 TFNoteId 时保留首个并告警；所有 wiki 均无卡片时中止。
+        导出完成后统一校验（见 _validate_results），任一校验问题都会
+        阻止本次导出被继续采用：
+          - notetype 定义冲突 / 全空导出——中止；
+          - 跨 wiki 重复 TFNoteId——告警并保留首个出现。
         """
         sources = self.get_enabled_sources()
         if not sources:
-            _raise_empty_export([])
+            self._raise_no_enabled_sources()
 
-        results: list[WikiExportData] = []
-        seen: set[str] = set()
+        results = [self.export_one(source) for source in sources]
 
-        for source in sources:
-            data = self.export_one(source)
-            results.append(data)
-
-            for note in data.note_sources:
-                if note.tf_id in seen:
-                    showWarning(
-                        "TiddlyFlashcards found a duplicate TFNoteId and kept the "
-                        f"first occurrence:\nWiki: {source.path}\nTFNoteId: {note.tf_id}"
-                    )
-                    continue
-                seen.add(note.tf_id)
-
-        if not any(data.note_sources for data in results):
-            _raise_empty_export(sources)
+        self._validate_results(sources, results)
 
         return results
 
+    @staticmethod
+    def _raise_no_enabled_sources() -> NoReturn:
+        """没有启用任何 WikiSource 时中止（与"无卡片"属于不同情形）。"""
+        showCritical(
+            "TiddlyFlashcards has no enabled wiki sources to export. "
+            "Please enable at least one wiki in the plugin config."
+        )
+        raise RuntimeError("No enabled wiki sources")
 
-def _raise_empty_export(sources: list[WikiSource]) -> NoReturn:
-    """所有启用 wiki 都没有卡片时中止，防止 importer 误挂起现有卡片。"""
-    paths = "\n".join(source.path for source in sources)
-    details = f"\n\nEnabled wikis:\n{paths}" if paths else ""
-    showCritical(
-        "TiddlyFlashcards export produced no cards. Sync was cancelled to "
-        f"protect existing cards.{details}"
-    )
-    raise RuntimeError("TiddlyFlashcards export produced no cards")
+    @staticmethod
+    def _raise_empty_export(sources: list[WikiSource]) -> NoReturn:
+        """所有 wiki 均无卡片时中止，防止 importer 误挂起现有卡片。"""
+        paths = "\n".join(source.path for source in sources)
+        details = f"\n\nEnabled wikis:\n{paths}" if paths else ""
+        showCritical(
+            "TiddlyFlashcards export produced no cards. Sync was cancelled to "
+            f"protect existing cards.{details}"
+        )
+        raise RuntimeError("TiddlyFlashcards export produced no cards")
+
+    @staticmethod
+    def _validate_results(
+        sources: list[WikiSource],
+        exported_wikis: list[WikiExportData],
+    ) -> None:
+        """依序校验所有 wiki 的导出产物，前两步中止，第三步仅告警。
+
+        校验顺序：
+          1. notetype 定义冲突——列出详情并中止；
+          2. 无卡片（全 wiki note_sources 为空）——中止；
+          3. 跨 wiki 重复 TFNoteId——告警并保留首个出现（不中止）。
+        """
+        # 1. notetype 定义冲突：列出详情并中止。
+        if conflicts := WikiManager._find_conflicting_models(exported_wikis):
+            details = "\n".join(
+                f"- {name}: "
+                + ", ".join(
+                    f"{model.wiki_info.name} ({model.wiki_info.path})"
+                    for model in definitions
+                )
+                for name, definitions in conflicts.items()
+            )
+            showCritical(
+                "TiddlyFlashcards found conflicting notetype definitions across "
+                "wikis. Sync was cancelled to protect existing cards.\n\n"
+                f"{details}"
+            )
+            raise RuntimeError("Conflicting notetype definitions across wikis")
+
+        # 2. 无卡片：中止，防止误挂起现有卡片。
+        if not any(wiki_data.note_sources for wiki_data in exported_wikis):
+            WikiManager._raise_empty_export(sources)
+
+        # 3. 重复 TFNoteId：仅告警，保留首个出现（不中止）。
+        seen: set[str] = set()
+        for wiki_data in exported_wikis:
+            for note in wiki_data.note_sources:
+                if note.note_info.tf_id in seen:
+                    showWarning(
+                        "TiddlyFlashcards found a duplicate TFNoteId and kept the "
+                        "first occurrence:\n"
+                        f"Wiki: {note.wiki_info.path}\n"
+                        f"TFNoteId: {note.note_info.tf_id}"
+                    )
+                    continue
+                seen.add(note.note_info.tf_id)
+
+    @staticmethod
+    def _find_conflicting_models(
+        exported_wikis: list[WikiExportData],
+    ) -> dict[str, list[ExportModel]] | None:
+        """检测跨 wiki 名字相同但定义不一致的 notetype 冲突。
+
+        展平所有 wiki 的 models 后按名字分组；仅当同一名字存在多份且
+        定义互不相同的 ExportModel 时视为冲突。
+        有冲突时返回 {model_name: 该名字下全部冲突的 ExportModel}，无冲突返回 None。
+        """
+        all_models: list[ExportModel] = [
+            model
+            for wiki_data in exported_wikis
+            for model in wiki_data.model_sources
+        ]
+
+        models_by_name: dict[str, list[ExportModel]] = defaultdict(list)
+        for model in all_models:
+            models_by_name[model.model_info.name].append(model)
+
+        conflicts = {
+            name: definitions
+            for name, definitions in models_by_name.items()
+            if len(definitions) > 1
+            and any(
+                definition.model_info != definitions[0].model_info
+                for definition in definitions[1:]
+            )
+        }
+        return conflicts or None
