@@ -20,7 +20,7 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, NoReturn
 
-from aqt.utils import showCritical, showWarning
+from aqt.utils import showCritical
 
 from .config import WIKI_TYPE_HTML, PluginConfig, WikiSource
 from .models import ModelSource, NoteSource
@@ -208,8 +208,7 @@ class WikiManager:
 
         导出完成后统一校验（见 _validate_results），任一校验问题都会
         阻止本次导出被继续采用：
-          - notetype 定义冲突 / 全空导出——中止；
-          - 跨 wiki 重复 TFNoteId——告警并保留首个出现。
+          - notetype 定义冲突 / 全空导出 / 跨 wiki 重复 TFNoteId——中止。
         """
         sources = self.get_enabled_sources()
         if not sources:
@@ -246,12 +245,12 @@ class WikiManager:
         sources: list[WikiSource],
         exported_wikis: list[WikiExportData],
     ) -> None:
-        """依序校验所有 wiki 的导出产物，前两步中止，第三步仅告警。
+        """依序校验所有 wiki 的导出产物，均因安全问题中止。
 
         校验顺序：
           1. notetype 定义冲突——列出详情并中止；
           2. 无卡片（全 wiki note_sources 为空）——中止；
-          3. 跨 wiki 重复 TFNoteId——告警并保留首个出现（不中止）。
+          3. 跨 wiki 重复 TFNoteId——列出详情并中止。
         """
         # 1. notetype 定义冲突：列出详情并中止。
         if conflicts := WikiManager._find_conflicting_models(exported_wikis):
@@ -274,19 +273,22 @@ class WikiManager:
         if not any(wiki_data.note_sources for wiki_data in exported_wikis):
             WikiManager._raise_empty_export(sources)
 
-        # 3. 重复 TFNoteId：仅告警，保留首个出现（不中止）。
-        seen: set[str] = set()
-        for wiki_data in exported_wikis:
-            for note in wiki_data.note_sources:
-                if note.note_info.tf_id in seen:
-                    showWarning(
-                        "TiddlyFlashcards found a duplicate TFNoteId and kept the "
-                        "first occurrence:\n"
-                        f"Wiki: {note.wiki_info.path}\n"
-                        f"TFNoteId: {note.note_info.tf_id}"
-                    )
-                    continue
-                seen.add(note.note_info.tf_id)
+        # 3. 重复 TFNoteId：列出详情并中止。
+        if duplicates := WikiManager._find_duplicate_note_ids(exported_wikis):
+            details = "\n".join(
+                f"- {tf_id}:\n"
+                + "\n".join(
+                    f"    {note.wiki_info.name} ({note.wiki_info.path})"
+                    for note in occurrences
+                )
+                for tf_id, occurrences in duplicates.items()
+            )
+            showCritical(
+                "TiddlyFlashcards found duplicate TFNoteId across wikis. "
+                "Sync was cancelled to protect existing cards.\n\n"
+                f"{details}"
+            )
+            raise RuntimeError("Duplicate TFNoteId across wikis")
 
     @staticmethod
     def _find_conflicting_models(
@@ -318,3 +320,25 @@ class WikiManager:
             )
         }
         return conflicts or None
+
+    @staticmethod
+    def _find_duplicate_note_ids(
+        exported_wikis: list[WikiExportData],
+    ) -> dict[str, list[ExportNote]] | None:
+        """检测跨 wiki 重复的 TFNoteId。
+
+        展平所有 wiki 的 notes 后按 tf_id 分组；仅当同一 tf_id 出现多份
+        ExportNote 时视为重复。
+        有重复时返回 {tf_id: 该 tf_id 下全部重复的 ExportNote}，无重复返回 None。
+        """
+        notes_by_id: dict[str, list[ExportNote]] = defaultdict(list)
+        for wiki_data in exported_wikis:
+            for note in wiki_data.note_sources:
+                notes_by_id[note.note_info.tf_id].append(note)
+
+        duplicates = {
+            tf_id: occurrences
+            for tf_id, occurrences in notes_by_id.items()
+            if len(occurrences) > 1
+        }
+        return duplicates or None
