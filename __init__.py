@@ -1,10 +1,10 @@
 import importlib
 from aqt import mw
 from aqt.qt import QAction
-from .config import open_config_dialog
-from .models import sync_models
-from .importer import TiddlyFlashcardsImporter
-from .exporter import export_all
+from .config import load_config, open_config_dialog
+from .importer import ModelSynchronizer, NoteSynchronizer, WikiSyncService
+from .exporter import WikiExporter, WikiManager
+from .models import compose_model_css
 
 def reload_config_dialog():
     importlib.reload(config)
@@ -12,13 +12,11 @@ def reload_config_dialog():
 
 def begin_sync():
     assert mw.col is not None
-    sync_models(mw.col)
-    result = export_all()
-    TiddlyFlashcardsImporter(result.data, result.wiki_summaries).run()
-
-def begin_sync_models():
-    assert mw.col is not None
-    sync_models(mw.col)
+    cfg = load_config()
+    css = compose_model_css(cfg)
+    manager = WikiManager(cfg, WikiExporter(cfg.tiddlywiki_path, css=css))
+    service = WikiSyncService(ModelSynchronizer(mw.col), NoteSynchronizer(mw.col))
+    service.sync(manager.export_all())
 
 # Register config action (called once when the add-on loads)
 mw.addonManager.setConfigAction(__name__, open_config_dialog)
@@ -26,10 +24,6 @@ mw.addonManager.setConfigAction(__name__, open_config_dialog)
 sync_cards_action = QAction("TiddlyFlashcards Sync Cards", mw)
 sync_cards_action.triggered.connect(begin_sync)
 mw.form.menuTools.addAction(sync_cards_action)
-
-sync_models_action = QAction("TiddlyFlashcards Sync Models", mw)
-sync_models_action.triggered.connect(begin_sync_models)
-mw.form.menuTools.addAction(sync_models_action)
 
 # Reload config diaglog config
 reload_config_dialog_action = QAction("Reload Config Dialg(For Debugging)", mw)
