@@ -154,6 +154,10 @@ class WikiExporter:
                 text=True,
                 timeout=EXPORT_TIMEOUT,
             )
+            with open(tmp_path, encoding="utf-8") as file:
+                output = file.read()
+
+            return json.loads(output)
         except subprocess.CalledProcessError as exc:
             showCritical(f"TiddlyFlashcards export failed:\n\n{exc.stderr or exc}")
             raise RuntimeError("TiddlyWiki export failed") from exc
@@ -170,27 +174,12 @@ class WikiExporter:
                 f"Wiki: {source.name}\nPath: {source.path}\n\n{exc}"
             )
             raise RuntimeError("Failed to run TiddlyWiki") from exc
-
-        try:
-            with open(tmp_path, encoding="utf-8") as file:
-                output = file.read()
-            # 没有卡片时，模板可能产生空文件；将其视为空结果而非 JSON 错误。
-            if not output.strip():
-                showCritical(
-                    "TiddlyFlashcards received an empty render result from the "
-                    "template. The wiki file may be corrupted.\n\n"
-                    f"Wiki: {source.name}\nPath: {source.path}"
-                )
-                raise RuntimeError("TiddlyWiki export produced empty output")
-
-            return json.loads(output)
         except json.JSONDecodeError:
             showCritical(
                 "Invalid JSON output from TiddlyFlashcards. "
                 "Please check your template output.\n\n"
                 f"Wiki: {source.name}\nPath: {source.path}"
             )
-
             raise
         finally:
             Path(tmp_path).unlink(missing_ok=True)
