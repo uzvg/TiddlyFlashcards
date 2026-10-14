@@ -2,7 +2,7 @@ import importlib
 from aqt import mw
 from aqt.qt import QAction
 from .config import load_config, open_config_dialog
-from .importer import ModelSynchronizer, NoteSynchronizer, WikiSyncService
+from .importer import AnkiModelRepository, AnkiNoteRepository, AnkiSyncer
 from .exporter import WikiExporter, WikiManager
 from .models import compose_model_css
 
@@ -15,8 +15,18 @@ def begin_sync():
     cfg = load_config()
     css = compose_model_css(cfg)
     manager = WikiManager(cfg, WikiExporter(cfg.tiddlywiki_path, css=css))
-    service = WikiSyncService(ModelSynchronizer(mw.col), NoteSynchronizer(mw.col))
-    service.sync(manager.export_all())
+
+    exports = manager.export_all()
+    model_sources = [em.model_info for exp in exports for em in exp.model_sources]
+    note_sources = [en.note_info for exp in exports for en in exp.note_sources]
+
+    model_repository = AnkiModelRepository(mw.col)
+    note_repository = AnkiNoteRepository(mw.col, model_repository)
+    service = AnkiSyncer(model_repository, note_repository)
+    service.sync_all(model_sources, note_sources)
+
+    mw.col.save()
+    mw.reset()
 
 # Register config action (called once when the add-on loads)
 mw.addonManager.setConfigAction(__name__, open_config_dialog)
