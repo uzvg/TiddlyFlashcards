@@ -6,5 +6,5 @@
   "description": "Sync TiddlyFlashcards from Tiddlywiki",
   "homepage": "https://plugins.uzvg.site",
   "conflicts": [],
-  "min_point_version": 50
+  "min_point_version": 260900
 }
