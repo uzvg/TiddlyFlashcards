@@ -85,6 +85,6 @@ template = {
     "did": None,
     "bfont": "",
     "bsize": 0,
-    "id": None
+    "id": None,
 }
 ```
