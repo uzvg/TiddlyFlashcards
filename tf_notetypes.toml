@@ -1,6 +1,6 @@
 # TiddlyFlashcards notetype 声明式定义（唯一来源，只读不改写）
 # 由 parse_notetypes() 解析为 ModelSpec，render_specs() 注入配置后渲染。
-# 模板中包含 __HOST__ 占位，渲染时替换为配置中的 api_url。
+# 模板中包含 {{WikiUrl}} 占位，渲染时替换为配置中的 url。
 # model_type: 0 = 普通卡片（basic），1 = 填空（cloze）
 #
 # 结构指纹只关心：字段名序列 + model_type + 模板名序列
@@ -23,7 +23,7 @@ back = """
 {{Back}}
 
 <div class="tf-link">
-    <a href="__HOST__/tiddler/{{TFNoteId}}">
+    <a href="{{WikiUrl}}/tiddler/{{TFNoteId}}">
         Open in TiddlyWiki
     </a>
 </div>
@@ -46,7 +46,7 @@ back = """
 {{Back Extra}}
 
 <div class="tf-link">
-    <a href="__HOST__/tiddler/{{TFNoteId}}">
+    <a href="{{WikiUrl}}/tiddler/{{TFNoteId}}">
         Open in TiddlyWiki
     </a>
 </div>
@@ -72,7 +72,7 @@ back = """
 {{type:Back}}
 
 <div class="tf-link">
-    <a href="__HOST__/tiddler/{{TFNoteId}}">
+    <a href="{{WikiUrl}}/tiddler/{{TFNoteId}}">
         Open in TiddlyWiki
     </a>
 </div>
@@ -96,7 +96,7 @@ back = """
 {{Back}}
 
 <div class="tf-link">
-    <a href="__HOST__/tiddler/{{TFNoteId}}">
+    <a href="{{WikiUrl}}/tiddler/{{TFNoteId}}">
         Open in TiddlyWiki
     </a>
 </div>
@@ -115,7 +115,7 @@ back = """
 {{Front}}
 
 <div class="tf-link">
-    <a href="__HOST__/tiddler/{{TFNoteId}}">
+    <a href="{{WikiUrl}}/tiddler/{{TFNoteId}}">
         Open in TiddlyWiki
     </a>
 </div>
@@ -139,7 +139,7 @@ back = """
 {{Back}}
 
 <div class="tf-link">
-    <a href="__HOST__/tiddler/{{TFNoteId}}">
+    <a href="{{WikiUrl}}/tiddler/{{TFNoteId}}">
         Open in TiddlyWiki
     </a>
 </div>
@@ -158,7 +158,7 @@ back = """
 {{Front}}
 
 <div class="tf-link">
-    <a href="__HOST__/tiddler/{{TFNoteId}}">
+    <a href="{{WikiUrl}}/tiddler/{{TFNoteId}}">
         Open in TiddlyWiki
     </a>
 </div>
