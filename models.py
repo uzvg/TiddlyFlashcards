@@ -4,12 +4,11 @@
 schema（FieldDict / TemplateDict）的子集，供同步器等模块复用。
 """
 
-from __future__ import annotations
-
-from dataclasses import dataclass, field, asdict
-from typing import Any
-from .config import PluginConfig
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import Any, Self
+
+from .config import PluginConfig
 
 
 @dataclass(slots=True)
@@ -32,7 +31,7 @@ class FieldSource:
     prevent_deletion: bool = True
 
     @classmethod
-    def from_dict(cls, raw: Any) -> "FieldSource":
+    def from_dict(cls, raw: Any) -> Self:
         """将字段名或字段字典解析为 FieldSource。"""
         return cls(
             name=raw.get("name", ""),
@@ -61,7 +60,7 @@ class TemplateSource:
     # bsize: int = 0
 
     @classmethod
-    def from_dict(cls, raw: dict[str, Any]) -> "TemplateSource":
+    def from_dict(cls, raw: dict[str, Any]) -> Self:
         return cls(
             name=raw.get("name", ""),
             qfmt=raw.get("front", ""),
@@ -96,7 +95,7 @@ class ModelSource:
         name: str,
         raw: dict[str, Any],
         css: str = "",
-    ) -> "ModelSource":
+    ) -> Self:
         return cls(
             name=name,
             type=raw.get("type", 0),
@@ -111,7 +110,7 @@ class ModelSource:
         cls,
         raw: dict[str, Any],
         css: str = "",
-    ) -> list["ModelSource"]:
+    ) -> list[Self]:
         return [
             cls.from_dict(name, cfg, css)
             for name, cfg in raw.get("tf_models", {}).items()
@@ -155,7 +154,7 @@ class NoteSource:
         cls,
         tf_id: str,
         raw: dict[str, Any],
-    ) -> "NoteSource":
+    ) -> Self:
         return cls(
             tf_id=tf_id,
             fields=raw.get("fields", {}),
@@ -169,7 +168,7 @@ class NoteSource:
     def from_json(
         cls,
         raw: dict[str, Any],
-    ) -> list["NoteSource"]:
+    ) -> list[Self]:
         return [
             cls.from_dict(tf_id, cfg) for tf_id, cfg in raw.get("tf_notes", {}).items()
         ]

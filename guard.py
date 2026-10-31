@@ -1,32 +1,27 @@
-from __future__ import annotations
-
-import aqt
+from anki.models import NotetypeDict
+from anki.notes import Note
 from aqt import gui_hooks, mw
 from aqt.addcards import AddCards
 from aqt.utils import showWarning
-
-from anki.notes import Note
-from anki.models import NotetypeDict
-from typing import Set
-
 
 # =========================
 # 配置
 # =========================
 
-def get_managed_models() -> Set[str]:
+
+def get_managed_models() -> set[str]:
     if mw.col is None:
         return set()
     managed_models = {
-        m["name"]
-        for m in mw.col.models.all()
-        if m.get("tf_managed", False)
+        m["name"] for m in mw.col.models.all() if m.get("tf_managed", False)
     }
     return managed_models
+
 
 # =========================
 # 判定逻辑
 # =========================
+
 
 def is_tf_model_name(name: str) -> bool:
     return name in get_managed_models()
@@ -35,9 +30,11 @@ def is_tf_model_name(name: str) -> bool:
 def is_tf_note(note: Note | None) -> bool:
     return note is not None and "TFNoteId" in note.keys()
 
+
 # =========================
 # Warning
 # =========================
+
 
 def show_tf_warning(note_type_name: str) -> None:
     showWarning(
@@ -51,6 +48,7 @@ def show_tf_warning(note_type_name: str) -> None:
 # =========================
 # 数据层拦截（核心）
 # =========================
+
 
 def patch_update_note() -> None:
     """
@@ -72,6 +70,7 @@ def patch_update_note() -> None:
 # UI 层 Hook（辅助）
 # =========================
 
+
 def register_ui_hooks() -> None:
     """
     提示 + 阻止添加
@@ -92,11 +91,11 @@ def register_ui_hooks() -> None:
     def on_add_cards_will_add(problem: str | None, note: Note):
         if note is None:
             return problem
-    
+
         if is_tf_note(note):
             show_tf_warning(note.model()["name"])
             return "Managed note type cannot be added manually."
-    
+
         return problem
 
     # 注册 hooks
@@ -111,6 +110,7 @@ def register_ui_hooks() -> None:
 # =========================
 # 总入口
 # =========================
+
 
 def register_note_guard() -> None:
     """

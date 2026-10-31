@@ -10,14 +10,12 @@ Collection。三层职责划分：
 
 约定：
 - Notetype 以 `name` 为唯一匹配键；Note 以 `NoteSource.tf_id`（存储在 Anki
-  Note 的 `tfnoteid` 字段）为唯一匹配键。
+  Note 的 `TFNoteId` 字段）为唯一匹配键。
 - 所有仓库类的 Collection 均通过依赖注入传入，不在类内硬编码全局 `mw.col`。
 - 同步算法默认不删除外部列表中缺失的对象；删除仅当显式启用删除策略时执行。
 """
 
-from __future__ import annotations
-
-from typing import Sequence
+from collections.abc import Sequence
 
 from anki.collection import Collection
 from anki.consts import QUEUE_TYPE_SUSPENDED
@@ -98,7 +96,9 @@ class AnkiModelRepository:
         existing_dict["css"] = source.css
 
         # 逐个更新已有字段（仅更新可由外部自定义的属性，保留内部 ord）。
-        for field, field_source in zip(existing_dict["flds"], source.flds):
+        for field, field_source in zip(
+            existing_dict["flds"], source.flds, strict=False
+        ):
             field["name"] = field_source.name
             field["collapsed"] = field_source.collapsed
             field["prevent_deletion"] = field_source.prevent_deletion
@@ -112,7 +112,9 @@ class AnkiModelRepository:
             mm.add_field(existing_dict, field)
 
         # 逐个更新已有模板。
-        for template, template_source in zip(existing_dict["tmpls"], source.tmpls):
+        for template, template_source in zip(
+            existing_dict["tmpls"], source.tmpls, strict=False
+        ):
             template["name"] = template_source.name
             template["qfmt"] = template_source.qfmt
             template["afmt"] = template_source.afmt
@@ -173,7 +175,9 @@ class AnkiModelRepository:
         )
 
     @staticmethod
-    def _verify_structure_compatible(existing: ModelSource, update: ModelSource) -> None:
+    def _verify_structure_compatible(
+        existing: ModelSource, update: ModelSource
+    ) -> None:
         """验证现有定义与目标定义是否兼容，不兼容时抛出带原因的异常。
 
         为安全起见，仅允许"在原有顺序之后追加"新的字段/模板；任何重排、删除
@@ -484,11 +488,7 @@ class AnkiSyncer:
     @staticmethod
     def _notes_equal(a: NoteSource, b: NoteSource) -> bool:
         """比较两个 NoteSource 是否内容等价（标签按无序集合比较）。"""
-        if (
-            a.model_name != b.model_name
-            or a.deck != b.deck
-            or a.status != b.status
-        ):
+        if a.model_name != b.model_name or a.deck != b.deck or a.status != b.status:
             return False
         if dict(a.fields) != dict(b.fields):
             return False

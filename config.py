@@ -5,7 +5,8 @@ TiddlyFlashcards Plugin Config Dialog
 import os
 import shutil
 import subprocess
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
+from typing import Self
 
 from aqt import mw
 from aqt.qt import (
@@ -47,7 +48,7 @@ class WikiSource:
     enabled: bool = True  # enable wiki or not
 
     @classmethod
-    def from_dict(cls, raw: dict) -> "WikiSource":
+    def from_dict(cls, raw: dict) -> Self:
         return cls(
             name=raw.get("name", ""),
             path=raw.get("path", ""),
@@ -69,7 +70,7 @@ class PluginConfig:
     custom_css: str = ""
 
     @classmethod
-    def from_dict(cls, raw: dict) -> "PluginConfig":
+    def from_dict(cls, raw: dict) -> Self:
         # 缺失字段回退到 DEFAULT_CONFIG，兼容手改 meta.json 造成的缺键情况。
         def _get(key: str):
             return raw.get(key, DEFAULT_CONFIG[key])
@@ -462,7 +463,9 @@ class WikisTab(_BaseTab):
     # -- public API --
     def apply_to(self, cfg: PluginConfig) -> None:
         cfg.tiddlywiki_path = resolve_tiddlywiki_path(self.bin_edit.text())
-        cfg.wiki_sources = [self._row_to_wiki(row) for row in range(self.table.rowCount())]
+        cfg.wiki_sources = [
+            self._row_to_wiki(row) for row in range(self.table.rowCount())
+        ]
 
 
 # ---------------------------------------------------------------------------

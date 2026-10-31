@@ -9,14 +9,13 @@ Architecture:
     ModelSource / NoteSource —— 结构化产物，分别对应 tf_notetypes / tf_notes 中的一项。
 """
 
-from __future__ import annotations
 import json
 import os
 import shutil
 import subprocess
 import tempfile
-from dataclasses import dataclass
 from collections import defaultdict
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, NoReturn
 
@@ -36,15 +35,18 @@ EXPORT_TIMEOUT = 60
 # 结构化产物
 # ---------------------------------------------------------------------------
 
+
 @dataclass(slots=True)
 class ExportModel:
     wiki_info: WikiSource
     model_info: ModelSource
 
+
 @dataclass(slots=True)
 class ExportNote:
     wiki_info: WikiSource
     note_info: NoteSource
+
 
 @dataclass(slots=True)
 class WikiExportData:
@@ -53,6 +55,7 @@ class WikiExportData:
     每条 model_sources / note_sources 均通过 wiki_info（WikiSource）携带
     该 wiki 的 name、url、path，以及各自的 model_info / note_info。
     """
+
     model_sources: list[ExportModel]
     note_sources: list[ExportNote]
 
@@ -125,9 +128,7 @@ class WikiExporter:
 
         return wiki_path
 
-    def _build_command(
-        self, wiki_path: Path, wiki_type: str, output: str
-    ) -> list[str]:
+    def _build_command(self, wiki_path: Path, wiki_type: str, output: str) -> list[str]:
         """按 wiki 类型拼装 tiddlywiki 命令。
 
         html 类型没有工作目录，需用 --load 直接载入单文件 wiki 的存储；
@@ -138,7 +139,7 @@ class WikiExporter:
             base += ["--load", str(wiki_path)]
         else:
             base += [str(wiki_path)]
-        return base + ["--render", self.template, output, "text/plain"]
+        return [*base, "--render", self.template, output, "text/plain"]
 
     def _render_json(self, source: WikiSource) -> dict[str, Any]:
         """调用 tiddlywiki 渲染 schema，将结果解析为 JSON（临时文件自动清理）。"""
@@ -301,9 +302,7 @@ class WikiManager:
         有冲突时返回 {model_name: 该名字下全部冲突的 ExportModel}，无冲突返回 None。
         """
         all_models: list[ExportModel] = [
-            model
-            for wiki_data in exported_wikis
-            for model in wiki_data.model_sources
+            model for wiki_data in exported_wikis for model in wiki_data.model_sources
         ]
 
         models_by_name: dict[str, list[ExportModel]] = defaultdict(list)

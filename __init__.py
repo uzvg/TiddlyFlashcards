@@ -1,14 +1,19 @@
 import importlib
+
 from aqt import mw
 from aqt.qt import QAction
+
+from . import config
 from .config import load_config, open_config_dialog
-from .importer import AnkiModelRepository, AnkiNoteRepository, AnkiSyncer
 from .exporter import WikiExporter, WikiManager
+from .importer import AnkiModelRepository, AnkiNoteRepository, AnkiSyncer
 from .models import compose_model_css
+
 
 def reload_config_dialog():
     importlib.reload(config)
     open_config_dialog()
+
 
 def begin_sync():
     assert mw.col is not None
@@ -27,6 +32,7 @@ def begin_sync():
 
     mw.col.save()
     mw.reset()
+
 
 # Register config action (called once when the add-on loads)
 mw.addonManager.setConfigAction(__name__, open_config_dialog)
