@@ -17,6 +17,7 @@ TiddlyFlashcards is an Anki 2.1 add-on (minimum Anki 26.09) that exports flashca
 - `config.py` — config dataclasses/defaults plus the Qt config dialog. Settings persist through `mw.addonManager` into the add-on's `meta.json` (gitignored).
 - `exporter.py` — invokes the TiddlyWiki CLI for every enabled `WikiSource` and parses the rendered JSON into `WikiExportData`. Folder and single-file HTML wikis use different command forms.
 - `models.py` — dataclasses for notetypes/notes and CSS composition. Anki-internal properties (`id`, `ord`, `mod`, etc.) are intentionally excluded.
+- `utils.py` — 错误报告对话框（标题常驻、详情折叠、复制调试信息）。公开入口为 `showError` / `showException`，命名对齐 `aqt.utils.showCritical`。
 - `importer.py` — `AnkiModelRepository` / `AnkiNoteRepository` CRUD plus `AnkiSyncer` diff orchestration. Sync policy lives here.
 - `docs/` — reference notes on Anki internal `FieldDict` / `NotetypeDict` / `TemplateDict` / `Note` schemas, not user documentation.
 
