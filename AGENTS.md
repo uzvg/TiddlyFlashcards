@@ -1,53 +1,53 @@
 # AGENTS.md
 
-TiddlyFlashcards is an Anki 2.1 add-on (minimum Anki 26.09) that exports flashcard data from configured TiddlyWiki wikis and syncs it into the Anki collection. There is no package build: Anki loads this repository directory directly.
+TiddlyFlashcards 是一个 Anki 2.1 插件（最低要求 Anki 26.09），用于从已配置的 TiddlyWiki 维基中导出闪卡数据，并将其同步到 Anki 集合。本项目没有打包构建流程：Anki 直接加载此仓库目录。
 
-## Setup and verification
+## 环境准备与验证
 
-- On this machine the add-on folder `~/.local/share/Anki2/addons21/TiddlyFlashcards` is a symlink to this repo. Edits take effect after reloading Anki; there is no install or build step.
-- No test suite and no CI. Verify with `ruff check .`, `ruff format --check .`, `basedpyright`, then a manual sync via **Tools → TiddlyFlashcards Sync Cards**.
-- Target Python is 3.13 (`pyproject.toml`), even though the system `python3` may be newer.
-- `guard.py` is not imported by `__init__.py`; it is currently unwired and has lint/typecheck errors. Do not treat those as regressions unless changing that file.
-- Modules cannot be exercised standalone: they import `aqt`/`anki` and open Qt dialogs. Test runtime behavior from inside Anki.
-- The "Reload Config Dialg(For Debugging)" menu action only reloads `config.py`; use Anki's add-on reload/restart for changes to other modules.
+- 在本机上，插件目录 `~/.local/share/Anki2/addons21/TiddlyFlashcards` 是指向本仓库的符号链接。修改后重新加载 Anki 即可生效；无需安装或构建步骤。
+- 没有测试套件，也没有 CI。验证方式为依次运行 `ruff check .`、`ruff format --check .`、`basedpyright`，然后通过 **Tools → TiddlyFlashcards Sync Cards** 手动执行一次同步。
+- 目标 Python 版本为 3.13（`pyproject.toml`），即使系统 `python3` 可能更新。
+- `guard.py` 未被 `__init__.py` 导入；它目前未接入，且存在 lint/类型检查错误。除非要修改该文件，否则不要把这些错误视为回归。
+- 各模块无法独立运行：它们会导入 `aqt`/`anki` 并打开 Qt 对话框。运行时行为需要在 Anki 内部测试。
+- “Reload Config Dialg(For Debugging)” 菜单项只会重新加载 `config.py`；其他模块的改动请使用 Anki 的插件重载/重启。
 
-## Architecture
+## 架构
 
-- `__init__.py` — add-on entrypoint. Registers the config dialog and Tools menu actions. Its imports run at Anki startup, so an import error prevents the add-on from loading.
-- `config.py` — config dataclasses/defaults plus the Qt config dialog. Settings persist through `mw.addonManager` into the add-on's `meta.json` (gitignored).
-- `exporter.py` — invokes the TiddlyWiki CLI for every enabled `WikiSource` and parses the rendered JSON into `WikiExportData`. Folder and single-file HTML wikis use different command forms.
-- `models.py` — dataclasses for notetypes/notes and CSS composition. Anki-internal properties (`id`, `ord`, `mod`, etc.) are intentionally excluded.
+- `__init__.py` — 插件入口。注册配置对话框和 Tools 菜单项。其导入语句在 Anki 启动时执行，因此导入错误会导致插件无法加载。
+- `config.py` — 配置 dataclass/默认值以及 Qt 配置对话框。设置通过 `mw.addonManager` 持久化到插件的 `meta.json`（已 gitignore）。
+- `exporter.py` — 为每个启用的 `WikiSource` 调用 TiddlyWiki CLI，并将渲染出的 JSON 解析为 `WikiExportData`。文件夹型与单文件 HTML 型维基使用不同的命令形式。
+- `models.py` — 笔记类型/笔记的 dataclass 以及 CSS 组合。Anki 内部属性（`id`、`ord`、`mod` 等）被有意排除。
 - `utils.py` — 错误报告对话框（标题常驻、详情折叠、复制调试信息）。公开入口为 `showError` / `showException`，命名对齐 `aqt.utils.showCritical`。
-- `importer.py` — `AnkiModelRepository` / `AnkiNoteRepository` CRUD plus `AnkiSyncer` diff orchestration. Sync policy lives here.
-- `docs/` — reference notes on Anki internal `FieldDict` / `NotetypeDict` / `TemplateDict` / `Note` schemas, not user documentation.
+- `importer.py` — `AnkiModelRepository` / `AnkiNoteRepository` 的 CRUD 以及 `AnkiSyncer` 的差异编排。同步策略位于此处。
+- `docs/` — 关于 Anki 内部 `FieldDict` / `NotetypeDict` / `TemplateDict` / `Note` schema 的参考笔记，不是用户文档。
 
-## Sync rules that are easy to break
+## 容易破坏的同步规则
 
-- Notetypes are matched by `name`; notes are matched by `tf_id`, stored in the Anki field `TFNoteId`. Both keys must be unique, including across wikis.
-- Sync is create/update only. Missing notetypes and notes are never deleted; do not add deletion without an explicit opt-in policy.
-- Notetype field/template layouts are append-only. The existing name sequence must be an exact prefix of the target sequence; reordering, deleting, or inserting in the middle raises. Notes cannot switch notetypes.
-- Missing decks are created automatically. `status == "suspend"` suspends all of a note's cards; any other value unsuspends them.
-- Sync aborts before any writes when there are no enabled wikis, the export yields zero notes, notetype definitions conflict across wikis, or a `TFNoteId` is duplicated.
-- Export needs a working `tiddlywiki` binary (configured path or `PATH`) and the render template tiddler `$:/plugins/uzvg/TiddlyFlashcards/templates/tf-render-template` in each wiki. That template ships with the TiddlyWiki plugin, not this repo. CLI forms are documented in `docs/tiddlywiki_render.md`.
+- 笔记类型按 `name` 匹配；笔记按 `tf_id` 匹配，该值存储在 Anki 字段 `TFNoteId` 中。两个键都必须唯一，包括跨维基的情况。
+- 同步仅执行创建/更新。缺失的笔记类型和笔记永远不会被删除；不要在未提供显式选择加入策略的情况下添加删除逻辑。
+- 笔记类型的字段/模板布局仅允许追加。现有名称序列必须是目标序列的精确前缀；重排、删除或在中间插入都会抛出异常。笔记不能切换笔记类型。
+- 缺失的牌组会自动创建。`status == "suspend"` 会暂停某条笔记的所有卡片；其他任何值都会取消暂停。
+- 当没有启用的维基、导出结果为零条笔记、不同维基间的笔记类型定义冲突，或 `TFNoteId` 重复时，同步会在任何写入之前中止。
+- 导出需要一个可用的 `tiddlywiki` 可执行文件（配置的路径或 `PATH`），以及每个维基中的渲染模板 tiddler `$:/plugins/uzvg/TiddlyFlashcards/templates/tf-render-template`。该模板随 TiddlyWiki 插件提供，不在本仓库中。CLI 形式记录在 `docs/tiddlywiki_render.md`。
 
-## Data files and codegen
+## 数据文件与代码生成
 
-- `tf_notetypes.toml` is the declarative notetype source. Regenerate `tf_notetypes.json` with `python tools/render_notetypes.py` (optionally `--url ...`) instead of hand-editing the JSON.
-- Comments in `tf_notetypes.toml` reference `parse_notetypes()` / `render_specs()` / `REBUILD_PENDING`; those symbols do not exist in this repo.
+- `tf_notetypes.toml` 是声明式的笔记类型源文件。使用 `python tools/render_notetypes.py`（可附加 `--url ...`）重新生成 `tf_notetypes.json`，不要手动编辑该 JSON。
+- `tf_notetypes.toml` 中的注释引用了 `parse_notetypes()` / `render_specs()` / `REBUILD_PENDING`；这些符号在本仓库中并不存在。
 
-## Git workflow for substantial changes
+## 重大改动的 Git 工作流
 
-- Treat a task as substantial when it changes behavior or touches multiple files: new features, refactors, schema/data-format changes, tooling/config changes, and non-trivial bug fixes. Create a dedicated branch as soon as the scope is clear, before the first commit:
-  `git switch -c <type>/<short-kebab-slug>` using `feat`, `fix`, `refactor`, `docs`, or `chore`.
-- Commit the verified change automatically on that branch; do not wait for confirmation. Use an English imperative subject matching existing history (`add ...`, `fix ...`, `refactor ...`) and explain the reason in the body if it is not obvious.
-- Stage only files that belong to the task. Never include unrelated worktree changes, secrets, or generated caches (`__pycache__`, `.ruff_cache`, `.mypy_cache`, `meta.json`).
-- Keep one branch per logical task. If the user is already on a task branch with related uncommitted work, commit there instead of nesting another branch.
-- Do not branch or commit for trivial edits (typos, comments, formatting, read-only investigation) unless asked.
-- Never push, force-push, rewrite history, or open a PR unless explicitly asked.
-- If lint, typecheck, or the manual Anki check fails, do not commit; report the failure instead.
-- In the final response, state the branch name and commit hash for any automatic commit.
+- 当任务改变行为或涉及多个文件时，将其视为重大改动：新功能、重构、schema/数据格式变更、工具/配置变更，以及非平凡的缺陷修复。一旦范围明确，就在首次提交之前创建专门分支：
+  `git switch -c <type>/<short-kebab-slug>`，类型使用 `feat`、`fix`、`refactor`、`docs` 或 `chore`。
+- 在该分支上自动提交已验证的改动，无需等待确认。使用与现有历史一致的英文祈使句主题（`add ...`、`fix ...`、`refactor ...`），如果原因不明显，请在正文中说明。
+- 只暂存属于该任务的文件。绝不包含无关的工作区改动、密钥或生成的缓存（`__pycache__`、`.ruff_cache`、`.mypy_cache`、`meta.json`）。
+- 每个逻辑任务保持一个分支。如果用户已经在包含相关未提交工作的任务分支上，请在该分支提交，而不是再嵌套一个新分支。
+- 除非被要求，否则不要为琐碎编辑（拼写、注释、格式、只读调查）创建分支或提交。
+- 除非明确要求，否则绝不推送、强制推送、重写历史或打开 PR。
+- 如果 lint、类型检查或手动 Anki 检查失败，则不要提交；改为报告失败。
+- 在最终回复中，说明分支名称以及任何自动提交的 commit 哈希。
 
-## Conventions
+## 约定
 
-- Comments and docstrings are Chinese; identifiers and UI strings are English. Preserve this split.
-- ruff targets Python 3.13 with line length 88, double quotes, and isort/pyupgrade/bugbear/simplify rules. E501 and full-width punctuation checks are intentionally disabled.
+- 注释和文档字符串使用中文；标识符和 UI 字符串使用英文。保持这一分工。
+- ruff 目标为 Python 3.13，行宽 88，双引号，并启用 isort/pyupgrade/bugbear/simplify 规则。E501 和全角标点检查被有意禁用。
