@@ -229,7 +229,7 @@ def confirmDeletion(plan: SyncPlan, parent: QWidget | None = None) -> bool:
     lines = [
         "This sync will delete objects that are no longer present in the "
         "TiddlyWiki export:",
-        f"  cards: {note_count}",
+        f"  notes: {note_count}",
         f"  notetypes: {model_count}",
         "",
     ]
@@ -237,7 +237,7 @@ def confirmDeletion(plan: SyncPlan, parent: QWidget | None = None) -> bool:
         samples = ", ".join(n.tf_id for n in plan.notes_to_delete[:DETAIL_SAMPLE_LIMIT])
         if note_count > DETAIL_SAMPLE_LIMIT:
             samples += ", ..."
-        lines.append(f"Cards to delete: {samples}")
+        lines.append(f"Notes to delete: {samples}")
     if model_count:
         samples = ", ".join(m.name for m in plan.models_to_delete[:DETAIL_SAMPLE_LIMIT])
         if model_count > DETAIL_SAMPLE_LIMIT:
