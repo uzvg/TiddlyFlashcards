@@ -35,19 +35,6 @@ TiddlyFlashcards 是一个 Anki 2.1 插件（最低要求 Anki 26.09），用于
 - `tf_notetypes.toml` 是声明式的笔记类型源文件。使用 `python tools/render_notetypes.py`（可附加 `--url ...`）重新生成 `tf_notetypes.json`，不要手动编辑该 JSON。
 - `tf_notetypes.toml` 中的注释引用了 `parse_notetypes()` / `render_specs()` / `REBUILD_PENDING`；这些符号在本仓库中并不存在。
 
-## 重大改动的 Git 工作流
-
-- 当任务改变行为或涉及多个文件时，将其视为重大改动：新功能、重构、schema/数据格式变更、工具/配置变更，以及非平凡的缺陷修复。一旦范围明确，就在首次提交之前创建专门分支：
-  `git switch -c <type>/<short-kebab-slug>`，类型使用 `feat`、`fix`、`refactor`、`docs` 或 `chore`。
-- 在该分支上自动提交已验证的改动，无需等待确认。使用与现有历史一致的英文祈使句主题（`add ...`、`fix ...`、`refactor ...`），如果原因不明显，请在正文中说明。
-- 只暂存属于该任务的文件。绝不包含无关的工作区改动、密钥或生成的缓存（`__pycache__`、`.ruff_cache`、`.mypy_cache`、`meta.json`）。
-- 每个逻辑任务保持一个分支。如果用户已经在包含相关未提交工作的任务分支上，请在该分支提交，而不是再嵌套一个新分支。
-- 除非被要求，否则不要为琐碎编辑（拼写、注释、格式、只读调查）创建分支或提交。
-- 除非明确要求，否则绝不推送、强制推送、重写历史或打开 PR。
-- 如果 lint、类型检查或手动 Anki 检查失败，则不要提交；改为报告失败。
-- 在最终回复中，说明分支名称以及任何自动提交的 commit 哈希。
-
 ## 约定
 
-- 注释和文档字符串使用中文；标识符和 UI 字符串使用英文。保持这一分工。
 - ruff 目标为 Python 3.13，行宽 88，双引号，并启用 isort/pyupgrade/bugbear/simplify 规则。E501 和全角标点检查被有意禁用。
