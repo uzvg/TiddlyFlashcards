@@ -5,6 +5,7 @@ from aqt.qt import QAction
 
 from . import config
 from .config import load_config, open_config_dialog
+from .exceptions import TiddlyFlashcardsError
 from .exporter import WikiExporter, WikiManager
 from .importer import AnkiModelRepository, AnkiNoteRepository, AnkiSyncer
 from .models import compose_model_css
@@ -51,9 +52,14 @@ def begin_sync():
     css = compose_model_css(cfg)
     manager = WikiManager(cfg, WikiExporter(cfg.tiddlywiki_path, css=css))
 
-    exports = manager.export_all()
-    model_sources = [em.model_info for exp in exports for em in exp.model_sources]
-    note_sources = [en.note_info for exp in exports for en in exp.note_sources]
+    try:
+        merged = manager.build_export()
+    except TiddlyFlashcardsError as exc:
+        showError(ErrorReport(exc.title, exc.summary, exc.details))
+        return
+
+    model_sources = [em.model_info for em in merged.model_sources]
+    note_sources = [en.note_info for en in merged.note_sources]
 
     model_repository = AnkiModelRepository(mw.col)
     note_repository = AnkiNoteRepository(mw.col, model_repository)

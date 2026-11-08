@@ -5,7 +5,7 @@ Architecture:
     WikiExporter —— 针对单个 WikiSource（folder 或单文件 HTML）调用 tiddlywiki
                     CLI 渲染成结构化的 WikiExportData。folder 与 html 两种类型
                     会使用不同的命令参数。
-    WikiManager  —— 遍历 PluginConfig 中所有启用的 WikiSource，逐一导出。
+    WikiManager  —— 编排导出、校验与合并，经 build_export() 产出导入所需数据。
     ModelSource / NoteSource —— 结构化产物，分别对应 tf_notetypes / tf_notes 中的一项。
 """
 
@@ -17,11 +17,19 @@ import tempfile
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, NoReturn
+from typing import Any
 
 from aqt.utils import showCritical
 
 from .config import WIKI_TYPE_HTML, PluginConfig, WikiSource
+from .exceptions import (
+    ConflictingModelError,
+    DuplicateTfIdError,
+    EmptyModelExportError,
+    EmptyNoteExportError,
+    NoEnabledWikiError,
+    UnknownModelError,
+)
 from .models import ModelSource, NoteSource
 
 # tiddlywiki 中生成 flashcards JSON 数据的导出模板
@@ -192,7 +200,7 @@ class WikiExporter:
 
 
 class WikiManager:
-    """编排所有启用 wiki 的导出。"""
+    """编排所有启用 wiki 的导出、校验与合并。"""
 
     def __init__(self, config: PluginConfig, exporter: WikiExporter) -> None:
         self.config = config
@@ -201,116 +209,42 @@ class WikiManager:
     def get_enabled_sources(self) -> list[WikiSource]:
         return [wiki for wiki in self.config.wiki_sources if wiki.enabled]
 
-    def export_one(self, source: WikiSource) -> WikiExportData:
-        return self.exporter.export(source)
+    def build_export(self) -> WikiExportData:
+        """导出、校验并合并所有启用 wiki，返回导入所需数据。
 
-    def export_all(self) -> list[WikiExportData]:
-        """导出所有启用 wiki，按配置顺序返回其 WikiExportData。
-
-        导出完成后统一校验（见 _validate_results），任一校验问题都会
-        阻止本次导出被继续采用：
-          - notetype 定义冲突 / 全空导出 / 跨 wiki 重复 TFNoteId——中止。
+        任一校验失败都会抛出 TiddlyFlashcardsError，不会执行合并。
         """
         sources = self.get_enabled_sources()
         if not sources:
-            self._raise_no_enabled_sources()
+            raise NoEnabledWikiError()
 
-        results = [self.export_one(source) for source in sources]
+        exported_wikis = [self.exporter.export(source) for source in sources]
 
-        self._validate_results(sources, results)
+        self._validate_results(exported_wikis)
 
-        return results
+        return self._merge_results(exported_wikis)
 
-    @staticmethod
-    def _raise_no_enabled_sources() -> NoReturn:
-        """没有启用任何 WikiSource 时中止（与"无卡片"属于不同情形）。"""
-        showCritical(
-            "TiddlyFlashcards has no enabled wiki sources to export. "
-            "Please enable at least one wiki in the plugin config."
-        )
-        raise RuntimeError("No enabled wiki sources")
+    def _validate_results(self, exported_wikis: list[WikiExportData]) -> None:
+        """依序校验所有 wiki 的导出产物，任一问题即抛出领域异常。
 
-    @staticmethod
-    def _raise_empty_export(sources: list[WikiSource]) -> NoReturn:
-        """所有 wiki 均无卡片时中止，防止 importer 误挂起现有卡片。"""
-        paths = "\n".join(source.path for source in sources)
-        details = f"\n\nEnabled wikis:\n{paths}" if paths else ""
-        showCritical(
-            "TiddlyFlashcards export produced no cards. Sync was cancelled to "
-            f"protect existing cards.{details}"
-        )
-        raise RuntimeError("TiddlyFlashcards export produced no cards")
-
-    @staticmethod
-    def _validate_results(
-        sources: list[WikiSource],
-        exported_wikis: list[WikiExportData],
-    ) -> None:
-        """依序校验所有 wiki 的导出产物，均因安全问题中止。
-
-        校验顺序：
-          1. notetype 定义冲突——列出详情并中止；
-          2. 无卡片（全 wiki note_sources 为空）——中止；
-          3. 跨 wiki 重复 TFNoteId——列出详情并中止。
+        顺序见 docs/sync_validation.md：空 model → model 冲突 → 空 note
+        → 未知 model → 重复 tf_id。
         """
-        # 1. notetype 定义冲突：列出详情并中止。
-        if conflicts := WikiManager._find_conflicting_models(exported_wikis):
-            details = "\n".join(
-                f"- {name}: "
-                + ", ".join(
-                    f"{model.wiki_info.name} ({model.wiki_info.path})"
-                    for model in definitions
-                )
-                for name, definitions in conflicts.items()
-            )
-            showCritical(
-                "TiddlyFlashcards found conflicting notetype definitions across "
-                "wikis. Sync was cancelled to protect existing cards.\n\n"
-                f"{details}"
-            )
-            raise RuntimeError("Conflicting notetype definitions across wikis")
+        enabled_wikis = [(wiki.name, wiki.path) for wiki in self.get_enabled_sources()]
 
-        # 2. 无卡片：中止，防止误挂起现有卡片。
-        if not any(wiki_data.note_sources for wiki_data in exported_wikis):
-            WikiManager._raise_empty_export(sources)
-
-        # 3. 重复 TFNoteId：列出详情并中止。
-        if duplicates := WikiManager._find_duplicate_note_ids(exported_wikis):
-            details = "\n".join(
-                f"- {tf_id}:\n"
-                + "\n".join(
-                    f"    {note.wiki_info.name} ({note.wiki_info.path})"
-                    for note in occurrences
-                )
-                for tf_id, occurrences in duplicates.items()
-            )
-            showCritical(
-                "TiddlyFlashcards found duplicate TFNoteId across wikis. "
-                "Sync was cancelled to protect existing cards.\n\n"
-                f"{details}"
-            )
-            raise RuntimeError("Duplicate TFNoteId across wikis")
-
-    @staticmethod
-    def _find_conflicting_models(
-        exported_wikis: list[WikiExportData],
-    ) -> dict[str, list[ExportModel]] | None:
-        """检测跨 wiki 名字相同但定义不一致的 notetype 冲突。
-
-        展平所有 wiki 的 models 后按名字分组；仅当同一名字存在多份且
-        定义互不相同的 ExportModel 时视为冲突。
-        有冲突时返回 {model_name: 该名字下全部冲突的 ExportModel}，无冲突返回 None。
-        """
-        all_models: list[ExportModel] = [
+        all_models = [
             model for wiki_data in exported_wikis for model in wiki_data.model_sources
         ]
+        if not all_models:
+            raise EmptyModelExportError(enabled_wikis)
 
         models_by_name: dict[str, list[ExportModel]] = defaultdict(list)
         for model in all_models:
             models_by_name[model.model_info.name].append(model)
-
         conflicts = {
-            name: definitions
+            name: [
+                (model.wiki_info.name, model.wiki_info.path) for model in definitions
+            ]
             for name, definitions in models_by_name.items()
             if len(definitions) > 1
             and any(
@@ -318,26 +252,46 @@ class WikiManager:
                 for definition in definitions[1:]
             )
         }
-        return conflicts or None
+        if conflicts:
+            raise ConflictingModelError(conflicts)
+
+        all_notes = [
+            note for wiki_data in exported_wikis for note in wiki_data.note_sources
+        ]
+        if not all_notes:
+            raise EmptyNoteExportError(enabled_wikis)
+
+        model_names = {model.model_info.name for model in all_models}
+        unknown: dict[str, list[tuple[str, str, str]]] = defaultdict(list)
+        for note in all_notes:
+            if note.note_info.model_name not in model_names:
+                unknown[note.note_info.model_name].append(
+                    (note.wiki_info.name, note.wiki_info.path, note.note_info.tf_id)
+                )
+        if unknown:
+            raise UnknownModelError(dict(unknown))
+
+        notes_by_id: dict[str, list[tuple[str, str]]] = defaultdict(list)
+        for note in all_notes:
+            notes_by_id[note.note_info.tf_id].append(
+                (note.wiki_info.name, note.wiki_info.path)
+            )
+        duplicates = {
+            tf_id: refs for tf_id, refs in notes_by_id.items() if len(refs) > 1
+        }
+        if duplicates:
+            raise DuplicateTfIdError(duplicates)
 
     @staticmethod
-    def _find_duplicate_note_ids(
-        exported_wikis: list[WikiExportData],
-    ) -> dict[str, list[ExportNote]] | None:
-        """检测跨 wiki 重复的 TFNoteId。
-
-        展平所有 wiki 的 notes 后按 tf_id 分组；仅当同一 tf_id 出现多份
-        ExportNote 时视为重复。
-        有重复时返回 {tf_id: 该 tf_id 下全部重复的 ExportNote}，无重复返回 None。
-        """
-        notes_by_id: dict[str, list[ExportNote]] = defaultdict(list)
+    def _merge_results(exported_wikis: list[WikiExportData]) -> WikiExportData:
+        """合并所有 wiki 的导出产物；同名 model 只保留第一个。"""
+        models: dict[str, ExportModel] = {}
+        notes: list[ExportNote] = []
         for wiki_data in exported_wikis:
-            for note in wiki_data.note_sources:
-                notes_by_id[note.note_info.tf_id].append(note)
-
-        duplicates = {
-            tf_id: occurrences
-            for tf_id, occurrences in notes_by_id.items()
-            if len(occurrences) > 1
-        }
-        return duplicates or None
+            for export_model in wiki_data.model_sources:
+                models.setdefault(export_model.model_info.name, export_model)
+            notes.extend(wiki_data.note_sources)
+        return WikiExportData(
+            model_sources=list(models.values()),
+            note_sources=notes,
+        )
