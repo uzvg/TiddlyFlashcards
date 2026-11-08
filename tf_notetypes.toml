@@ -9,7 +9,7 @@
 
 [TFBasic]
 model_type = 0
-fields = ["Front", "Back", "TFNoteId", "TFChecksum"]
+fields = ["Front", "Back", "TFNoteId"]
 
 [[TFBasic.templates]]
 name = "Card 1"
@@ -31,7 +31,7 @@ back = """
 
 [TFCloze]
 model_type = 1
-fields = ["Text", "Back Extra", "TFNoteId", "TFChecksum"]
+fields = ["Text", "Back Extra", "TFNoteId"]
 
 [[TFCloze.templates]]
 name = "Card 1"
@@ -55,7 +55,7 @@ back = """
 # TFType 对应 Anki 中的 Basic（type in the answer）
 [TFType]
 model_type = 0
-fields = ["Front", "Back", "TFNoteId", "TFChecksum"]
+fields = ["Front", "Back", "TFNoteId"]
 
 [[TFType.templates]]
 name = "Card 1"
@@ -81,7 +81,7 @@ back = """
 # TFPair 对应 Anki 中的 Basic（and Reversed card）
 [TFPair]
 model_type = 0
-fields = ["Front", "Back", "TFNoteId", "TFChecksum"]
+fields = ["Front", "Back", "TFNoteId"]
 
 [[TFPair.templates]]
 name = "Card 1"
@@ -124,7 +124,7 @@ back = """
 # TFOptionalPair 对应 Anki 中的 Basic（Optional Reversed Card）
 [TFOptionalPair]
 model_type = 0
-fields = ["Front", "Back", "Add Reverse", "TFNoteId", "TFChecksum"]
+fields = ["Front", "Back", "Add Reverse", "TFNoteId"]
 
 [[TFOptionalPair.templates]]
 name = "Card 1"

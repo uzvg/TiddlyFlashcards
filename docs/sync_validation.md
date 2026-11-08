@@ -165,4 +165,4 @@ Found 512 tf_id conflicts across 3 wikis.
 
 - 不修改 `importer.py` 的同步行为；其同步/删除编排的权威设计见 `docs/import_flow.md`。
 - 不在本次实现删除逻辑；但文档与规则必须承认 Anki 数据是 TiddlyWiki 工作空间的单向映射，删除最终会存在。
-- 不支持 `(wiki, tf_id)` 复合身份。若未来需要同一 `tf_id` 在不同 wiki 中作为独立 note 共存，必须先设计稳定的 wiki id、`TFWiki` 字段或复合键、importer 匹配逻辑、旧 note 迁移以及删除语义；不能仅靠放宽 `_validate_results()` 实现。
+- 不支持 `(wiki, tf_id)` 复合身份。若未来需要同一 `tf_id` 在不同 wiki 中作为独立 note 共存，必须先设计稳定的 wiki id、`WikiName` 字段或复合键、importer 匹配逻辑、旧 note 迁移以及删除语义；不能仅靠放宽 `_validate_results()` 实现。

@@ -16,10 +16,12 @@ importer 不关心数据从哪里来，只消费干净的结构化输入。三�
 
 ## 2. 输入契约
 
-`AnkiSyncer` 直接接受 `build_export()` 返回的 `WikiExportData`，并通过内部合并函数 `_merge_sources()` 把它提取为 `ModelSource` / `NoteSource` 列表：
+`AnkiSyncer` 直接接受 `build_export()` 返回的 `WikiExportData`，并通过内部提取函数 `extract_sources()` 把它提取为 `ModelSource` / `NoteSource` 列表：
 
 - 同名 model 已在导出阶段去重并保留第一个，此处仅从每个 `ExportModel` 取出 `model_info`。
-- note 直接从每个 `ExportNote` 取出 `note_info`；`wiki_info` 仅用于溯源，importer 不读取。
+- note 从每个 `ExportNote` 取出 `note_info`。
+
+`extract_sources()` 是唯一同时拿到 `note_info` 与 `wiki_info` 的位置，也是把 wiki 派生信息折入 note 字段的指定接缝：未来若需把 `WikiSource` 的 name / url 写入 note 字段（如 `WikiName` / `WikiUrl`，用于多 wiki 的逐卡片来源标识与 wiki 链接），只在此处完成，不得散落到仓库层或同步编排。注入字段只作为数据/溯源进入 `fields`，不改变 `tf_id` 作为唯一匹配键的身份语义。
 
 该输入已由导出阶段保证（详见 `sync_validation.md`）：
 
@@ -50,7 +52,7 @@ importer 信任这份契约，不再重复校验；校验集中在上游导出�
 
 ## 5. 同步阶段
 
-一次同步分三步，且**先计划、后确认、再执行**，保证删除确认发生在任何写操作之前。入口 `sync_all(data: WikiExportData)` 先调用 `_merge_sources()` 提取出 `ModelSource` / `NoteSource`，再进入下面的计划 / 确认 / 执行。
+一次同步分三步，且**先计划、后确认、再执行**，保证删除确认发生在任何写操作之前。入口 `sync_all(data: WikiExportData)` 先调用 `extract_sources()` 提取出 `ModelSource` / `NoteSource`，再进入下面的计划 / 确认 / 执行。
 
 ### 5.1 计算计划（只读，不写）
 
@@ -115,6 +117,5 @@ Notes     - total 120, added 3, updated 7, unchanged 105, deleted 5
 ## 9. 已知风险与非目标
 
 - 无 per-wiki 标识：禁用/移除 wiki 在下次同步会删除其卡片，删除范围无法缩小到单个 wiki。
-- 不实现 `(wiki, tf_id)` 复合身份；若未来需要同一 `tf_id` 在不同 wiki 各自独立存在，须先设计 `TFWiki` 字段或复合键，并连同匹配、迁移与删除语义一并设计（见 `sync_validation.md` 第 8 节）。
-- `TFChecksum` 字段已存在于所有 TF notetype，但当前不参与同步判定（保留字段，未来可用于内容指纹以跳过未变化 note）。
+- 不实现 `(wiki, tf_id)` 复合身份；若未来需要同一 `tf_id` 在不同 wiki 各自独立存在，须先设计 `WikiName` 字段或复合键，并连同匹配、迁移与删除语义一并设计（见 `sync_validation.md` 第 8 节）。
 - 无事务/回滚：写阶段失败可能留下部分写入，需靠报告与错误提示让用户知情。

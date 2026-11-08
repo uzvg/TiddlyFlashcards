@@ -7,8 +7,7 @@
       "flds": [
         "Front",
         "Back",
-        "TFNoteId",
-        "TFChecksum"
+        "TFNoteId"
       ],
       "tmpls": [
         {
@@ -25,8 +24,7 @@
       "flds": [
         "Text",
         "Back Extra",
-        "TFNoteId",
-        "TFChecksum"
+        "TFNoteId"
       ],
       "tmpls": [
         {
@@ -43,8 +41,7 @@
       "flds": [
         "Front",
         "Back",
-        "TFNoteId",
-        "TFChecksum"
+        "TFNoteId"
       ],
       "tmpls": [
         {
@@ -61,8 +58,7 @@
       "flds": [
         "Front",
         "Back",
-        "TFNoteId",
-        "TFChecksum"
+        "TFNoteId"
       ],
       "tmpls": [
         {
@@ -85,8 +81,7 @@
         "Front",
         "Back",
         "Add Reverse",
-        "TFNoteId",
-        "TFChecksum"
+        "TFNoteId"
       ],
       "tmpls": [
         {
