@@ -20,13 +20,13 @@ TiddlyFlashcards 是一个 Anki 2.1 插件（最低要求 Anki 26.09），用于
 - `models.py` — 笔记类型/笔记的 dataclass 以及 CSS 组合。Anki 内部属性（`id`、`ord`、`mod` 等）被有意排除。
 - `utils.py` — 错误报告对话框（标题常驻、详情折叠、复制调试信息）。公开入口为 `showError` / `showException`，命名对齐 `aqt.utils.showCritical`。
 - `importer.py` — `AnkiModelRepository` / `AnkiNoteRepository` 的 CRUD 以及 `AnkiSyncer` 的差异编排。同步策略位于此处。
-- `docs/` — 设计说明与 Anki 内部 `FieldDict` / `NotetypeDict` / `TemplateDict` / `Note` schema 的参考笔记，不是用户文档。同步前校验设计见 `docs/sync_validation.md`。
+- `docs/` — 设计说明与 Anki 内部 `FieldDict` / `NotetypeDict` / `TemplateDict` / `Note` schema 的参考笔记，不是用户文档。同步前校验设计见 `docs/sync_validation.md`，导入/同步与删除流程见 `docs/import_flow.md`。
 
 ## 容易破坏的同步规则
 
 - 笔记类型按 `name` 匹配；笔记按 `tf_id` 匹配，该值存储在 Anki 字段 `TFNoteId` 中。两个键都必须唯一，包括跨维基的情况。
 - Note 的有效定义包含 `WikiSource` 派生字段（name/path/url 等）；因此同一 `tf_id` 跨 wiki 重复一律冲突，即使 `NoteSource` 内容相同。
-- Anki 中的 notetype / note 是 TiddlyWiki 工作空间的单向映射（TiddlyWiki → Anki），不是独立数据源；因此目标设计包含删除：导出结果中缺失的受管对象最终应被删除。当前尚未实现删除逻辑，在显式删除策略落地前不得添加删除行为。
+- Anki 中的 notetype / note 是 TiddlyWiki 工作空间的单向映射（TiddlyWiki → Anki），不是独立数据源；因此目标设计包含删除：导出结果中缺失的受管对象最终应被删除。删除策略（受管范围、执行顺序、每次删除前的确认弹窗）见 `docs/import_flow.md`；当前尚未实现删除逻辑，落地前不得添加删除行为。
 - 笔记类型的字段/模板布局仅允许追加。现有名称序列必须是目标序列的精确前缀；重排、删除或在中间插入都会抛出异常。笔记不能切换笔记类型。
 - 缺失的牌组会自动创建。`status == "suspend"` 会暂停某条笔记的所有卡片；其他任何值都会取消暂停。
 - 当没有启用的维基、所有启用维基合计导出零个 model 或零个 note、跨维基 model 定义冲突、note 引用未导出的 model，或 `TFNoteId` 重复时，同步会在任何写入之前中止。

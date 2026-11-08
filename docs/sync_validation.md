@@ -4,7 +4,7 @@
 
 ## 1. 数据映射与不变量
 
-- Anki 中的 notetype / note 是 TiddlyWiki 工作空间的单向映射（TiddlyWiki → Anki），不是独立数据源。目标设计包含删除：导出结果中缺失的受管对象最终应被删除。当前尚未实现删除逻辑，但删除是映射语义的一部分；在校验失败时直接中止，是为了避免在半套数据上执行后续映射。
+- Anki 中的 notetype / note 是 TiddlyWiki 工作空间的单向映射（TiddlyWiki → Anki），不是独立数据源。目标设计包含删除：导出结果中缺失的受管对象最终应被删除。当前尚未实现删除逻辑，但删除是映射语义的一部分；在校验失败时直接中止，是为了避免在半套数据上执行后续映射。删除的执行顺序、受管范围与确认交互详见 `docs/import_flow.md`。
 - Notetype 以 `ModelSource.name` 为唯一键：同一 `name` 在所有启用 wiki 中只能对应**一种定义**。同名且定义完全相同的 model 可以重复出现在多个 wiki；同名但定义不同即为冲突。
 - Note 以 `NoteSource.tf_id` 为唯一键：同一 `tf_id` 在所有启用 wiki 中只能出现一次。
 - 冲突判定的对象是最终写入 Anki 的“有效 note”：`NoteSource` 加上从 `WikiSource` 派生的字段（wiki name、path、url 等）。wiki 派生字段不同，跨 wiki 的同 `tf_id` 就必然是不同的 note；因此即使 `NoteSource` 内容相同，重复 `tf_id` 也一律视为冲突，不做“内容相同就放行”的特判。
@@ -163,6 +163,6 @@ Found 512 tf_id conflicts across 3 wikis.
 
 ## 8. 非目标
 
-- 不修改 `importer.py` 的同步行为。
+- 不修改 `importer.py` 的同步行为；其同步/删除编排的权威设计见 `docs/import_flow.md`。
 - 不在本次实现删除逻辑；但文档与规则必须承认 Anki 数据是 TiddlyWiki 工作空间的单向映射，删除最终会存在。
 - 不支持 `(wiki, tf_id)` 复合身份。若未来需要同一 `tf_id` 在不同 wiki 中作为独立 note 共存，必须先设计稳定的 wiki id、`TFWiki` 字段或复合键、importer 匹配逻辑、旧 note 迁移以及删除语义；不能仅靠放宽 `_validate_results()` 实现。
