@@ -16,18 +16,21 @@ TiddlyFlashcards 是一个 Anki 2.1 插件（最低要求 Anki 26.09），用于
 - `__init__.py` — 插件入口。注册配置对话框和 Tools 菜单项。其导入语句在 Anki 启动时执行，因此导入错误会导致插件无法加载。
 - `config.py` — 配置 dataclass/默认值以及 Qt 配置对话框。设置通过 `mw.addonManager` 持久化到插件的 `meta.json`（已 gitignore）。
 - `exporter.py` — 为每个启用的 `WikiSource` 调用 TiddlyWiki CLI，并将渲染出的 JSON 解析为 `WikiExportData`。文件夹型与单文件 HTML 型维基使用不同的命令形式。
+- `exceptions.py` — 同步前校验的领域异常，只携带 `title` / `summary` / `details` 数据，不导入 Qt；由 `__init__.py` 捕获并交给 `utils.showError` 展示。
 - `models.py` — 笔记类型/笔记的 dataclass 以及 CSS 组合。Anki 内部属性（`id`、`ord`、`mod` 等）被有意排除。
 - `utils.py` — 错误报告对话框（标题常驻、详情折叠、复制调试信息）。公开入口为 `showError` / `showException`，命名对齐 `aqt.utils.showCritical`。
 - `importer.py` — `AnkiModelRepository` / `AnkiNoteRepository` 的 CRUD 以及 `AnkiSyncer` 的差异编排。同步策略位于此处。
-- `docs/` — 关于 Anki 内部 `FieldDict` / `NotetypeDict` / `TemplateDict` / `Note` schema 的参考笔记，不是用户文档。
+- `docs/` — 设计说明与 Anki 内部 `FieldDict` / `NotetypeDict` / `TemplateDict` / `Note` schema 的参考笔记，不是用户文档。同步前校验设计见 `docs/sync_validation.md`。
 
 ## 容易破坏的同步规则
 
 - 笔记类型按 `name` 匹配；笔记按 `tf_id` 匹配，该值存储在 Anki 字段 `TFNoteId` 中。两个键都必须唯一，包括跨维基的情况。
-- 同步仅执行创建/更新。缺失的笔记类型和笔记永远不会被删除；不要在未提供显式选择加入策略的情况下添加删除逻辑。
+- Note 的有效定义包含 `WikiSource` 派生字段（name/path/url 等）；因此同一 `tf_id` 跨 wiki 重复一律冲突，即使 `NoteSource` 内容相同。
+- Anki 中的 notetype / note 是 TiddlyWiki 工作空间的单向映射（TiddlyWiki → Anki），不是独立数据源；因此目标设计包含删除：导出结果中缺失的受管对象最终应被删除。当前尚未实现删除逻辑，在显式删除策略落地前不得添加删除行为。
 - 笔记类型的字段/模板布局仅允许追加。现有名称序列必须是目标序列的精确前缀；重排、删除或在中间插入都会抛出异常。笔记不能切换笔记类型。
 - 缺失的牌组会自动创建。`status == "suspend"` 会暂停某条笔记的所有卡片；其他任何值都会取消暂停。
-- 当没有启用的维基、导出结果为零条笔记、不同维基间的笔记类型定义冲突，或 `TFNoteId` 重复时，同步会在任何写入之前中止。
+- 当没有启用的维基、所有启用维基合计导出零个 model 或零个 note、跨维基 model 定义冲突、note 引用未导出的 model，或 `TFNoteId` 重复时，同步会在任何写入之前中止。
+- 同步前校验统一由 `WikiManager.validate_results()` 独立完成，不要内联到 `export_all`；校验顺序、异常类型和 details 格式见 `docs/sync_validation.md`。
 - 导出需要一个可用的 `tiddlywiki` 可执行文件（配置的路径或 `PATH`），以及每个维基中的渲染模板 tiddler `$:/plugins/uzvg/TiddlyFlashcards/templates/tf-render-template`。该模板随 TiddlyWiki 插件提供，不在本仓库中。CLI 形式记录在 `docs/tiddlywiki_render.md`。
 
 ## 数据文件与代码生成
