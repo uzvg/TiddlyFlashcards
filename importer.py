@@ -37,6 +37,11 @@ def _escape_search_value(value: str) -> str:
     return value.replace("\\", "\\\\").replace('"', '\\"')
 
 
+def _content_fields(source: NoteSource) -> dict[str, str]:
+    """返回不含身份字段 TFNoteId 的内容字段。"""
+    return {k: v for k, v in source.fields.items() if k != TF_ID_FIELD}
+
+
 # ---------------------------------------------------------------------------
 # AnkiModelRepository
 # ---------------------------------------------------------------------------
@@ -304,6 +309,8 @@ class AnkiNoteRepository:
 
         for field_name in self._field_names(current_model):
             note[field_name] = source.fields.get(field_name, "")
+
+        note[self.tf_id_field] = source.tf_id
 
         self._sync_tags(note, source.tags)
         self._sync_deck(note_id, source.deck)
@@ -580,7 +587,7 @@ class AnkiSyncer:
         """比较两个 NoteSource 是否内容等价（标签按无序集合比较）。"""
         if a.model_name != b.model_name or a.deck != b.deck or a.status != b.status:
             return False
-        if dict(a.fields) != dict(b.fields):
+        if _content_fields(a) != _content_fields(b):
             return False
         return sorted(a.tags) == sorted(b.tags)
 
