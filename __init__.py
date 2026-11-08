@@ -66,6 +66,8 @@ def begin_sync():
     try:
         report = service.sync_all(merged, confirm_deletion=confirmDeletion)
     except (ValueError, RuntimeError) as exc:
+        # 写阶段无事务：持久化已完成的部分写，避免集合与磁盘不一致。
+        mw.col.save()
         showException(
             exc,
             summary=(
