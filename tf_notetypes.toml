@@ -1,15 +1,24 @@
 # TiddlyFlashcards notetype 声明式定义（唯一来源，只读不改写）
-# 由 parse_notetypes() 解析为 ModelSpec，render_specs() 注入配置后渲染。
-# 模板中包含 {{WikiUrl}} 占位，渲染时替换为配置中的 url。
+# 模板中包含 {{WikiUrl}} 占位，渲染时替换为Fields中的 WikiUrl。
 # model_type: 0 = 普通卡片（basic），1 = 填空（cloze）
-#
-# 结构指纹只关心：字段名序列 + model_type + 模板名序列
-# 内容指纹额外包含：qfmt/afmt + css
-# 字段/模板增删改名、类型互换 → 破坏性变更（REBUILD_PENDING），不做自动迁移。
 
 [TFBasic]
 model_type = 0
-fields = ["Front", "Back", "TFNoteId"]
+
+[[TFBasic.fields]]
+name = "Front"
+collapsed = true
+prevent_deletion = true
+
+[[TFBasic.fields]]
+name = "Back"
+collapsed = true
+prevent_deletion = true
+
+[[TFBasic.fields]]
+name = "TFNoteId"
+collapsed = true
+prevent_deletion = true
 
 [[TFBasic.templates]]
 name = "Card 1"
@@ -31,7 +40,21 @@ back = """
 
 [TFCloze]
 model_type = 1
-fields = ["Text", "Back Extra", "TFNoteId"]
+
+[[TFCloze.fields]]
+name = "Text"
+collapsed = true
+prevent_deletion = true
+
+[[TFCloze.fields]]
+name = "Back Extra"
+collapsed = true
+prevent_deletion = true
+
+[[TFCloze.fields]]
+name = "TFNoteId"
+collapsed = true
+prevent_deletion = true
 
 [[TFCloze.templates]]
 name = "Card 1"
@@ -55,7 +78,21 @@ back = """
 # TFType 对应 Anki 中的 Basic（type in the answer）
 [TFType]
 model_type = 0
-fields = ["Front", "Back", "TFNoteId"]
+
+[[TFType.fields]]
+name = "Front"
+collapsed = true
+prevent_deletion = true
+
+[[TFType.fields]]
+name = "Back"
+collapsed = true
+prevent_deletion = true
+
+[[TFType.fields]]
+name = "TFNoteId"
+collapsed = true
+prevent_deletion = true
 
 [[TFType.templates]]
 name = "Card 1"
@@ -81,7 +118,21 @@ back = """
 # TFPair 对应 Anki 中的 Basic（and Reversed card）
 [TFPair]
 model_type = 0
-fields = ["Front", "Back", "TFNoteId"]
+
+[[TFPair.fields]]
+name = "Front"
+collapsed = true
+prevent_deletion = true
+
+[[TFPair.fields]]
+name = "Back"
+collapsed = true
+prevent_deletion = true
+
+[[TFPair.fields]]
+name = "TFNoteId"
+collapsed = true
+prevent_deletion = true
 
 [[TFPair.templates]]
 name = "Card 1"
@@ -124,7 +175,26 @@ back = """
 # TFOptionalPair 对应 Anki 中的 Basic（Optional Reversed Card）
 [TFOptionalPair]
 model_type = 0
-fields = ["Front", "Back", "Add Reverse", "TFNoteId"]
+
+[[TFOptionalPair.fields]]
+name = "Front"
+collapsed = true
+prevent_deletion = true
+
+[[TFOptionalPair.fields]]
+name = "Back"
+collapsed = true
+prevent_deletion = true
+
+[[TFOptionalPair.fields]]
+name = "Add Reverse"
+collapsed = true
+prevent_deletion = true
+
+[[TFOptionalPair.fields]]
+name = "TFNoteId"
+collapsed = true
+prevent_deletion = true
 
 [[TFOptionalPair.templates]]
 name = "Card 1"

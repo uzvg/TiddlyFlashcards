@@ -5,9 +5,21 @@
       "sortf": 0,
       "css": "",
       "flds": [
-        "Front",
-        "Back",
-        "TFNoteId"
+        {
+          "name": "Front",
+          "collapsed": true,
+          "prevent_deletion": true
+        },
+        {
+          "name": "Back",
+          "collapsed": true,
+          "prevent_deletion": true
+        },
+        {
+          "name": "TFNoteId",
+          "collapsed": true,
+          "prevent_deletion": true
+        }
       ],
       "tmpls": [
         {
@@ -22,9 +34,21 @@
       "sortf": 0,
       "css": "",
       "flds": [
-        "Text",
-        "Back Extra",
-        "TFNoteId"
+        {
+          "name": "Text",
+          "collapsed": true,
+          "prevent_deletion": true
+        },
+        {
+          "name": "Back Extra",
+          "collapsed": true,
+          "prevent_deletion": true
+        },
+        {
+          "name": "TFNoteId",
+          "collapsed": true,
+          "prevent_deletion": true
+        }
       ],
       "tmpls": [
         {
@@ -39,9 +63,21 @@
       "sortf": 0,
       "css": "",
       "flds": [
-        "Front",
-        "Back",
-        "TFNoteId"
+        {
+          "name": "Front",
+          "collapsed": true,
+          "prevent_deletion": true
+        },
+        {
+          "name": "Back",
+          "collapsed": true,
+          "prevent_deletion": true
+        },
+        {
+          "name": "TFNoteId",
+          "collapsed": true,
+          "prevent_deletion": true
+        }
       ],
       "tmpls": [
         {
@@ -56,9 +92,21 @@
       "sortf": 0,
       "css": "",
       "flds": [
-        "Front",
-        "Back",
-        "TFNoteId"
+        {
+          "name": "Front",
+          "collapsed": true,
+          "prevent_deletion": true
+        },
+        {
+          "name": "Back",
+          "collapsed": true,
+          "prevent_deletion": true
+        },
+        {
+          "name": "TFNoteId",
+          "collapsed": true,
+          "prevent_deletion": true
+        }
       ],
       "tmpls": [
         {
@@ -78,10 +126,26 @@
       "sortf": 0,
       "css": "",
       "flds": [
-        "Front",
-        "Back",
-        "Add Reverse",
-        "TFNoteId"
+        {
+          "name": "Front",
+          "collapsed": true,
+          "prevent_deletion": true
+        },
+        {
+          "name": "Back",
+          "collapsed": true,
+          "prevent_deletion": true
+        },
+        {
+          "name": "Add Reverse",
+          "collapsed": true,
+          "prevent_deletion": true
+        },
+        {
+          "name": "TFNoteId",
+          "collapsed": true,
+          "prevent_deletion": true
+        }
       ],
       "tmpls": [
         {
