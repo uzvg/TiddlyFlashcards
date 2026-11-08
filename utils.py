@@ -34,7 +34,10 @@ from aqt.qt import (
     QWidget,
     qconnect,
 )
-from aqt.utils import disable_help_button, supportText, tooltip
+from aqt.utils import askUser, disable_help_button, supportText, tooltip
+
+from .exceptions import DETAIL_SAMPLE_LIMIT
+from .importer import SyncPlan
 
 WINDOW_TITLE = "TiddlyFlashcards"
 
@@ -216,3 +219,30 @@ def showException(
         ErrorReport.from_exception(exc, title=title, summary=summary, details=details),
         parent=parent,
     )
+
+
+def confirmDeletion(plan: SyncPlan, parent: QWidget | None = None) -> bool:
+    """删除前确认：展示待删除的 note / notetype 数量与样本，返回是否继续。"""
+    note_count = len(plan.notes_to_delete)
+    model_count = len(plan.models_to_delete)
+
+    lines = [
+        "This sync will delete objects that are no longer present in the "
+        "TiddlyWiki export:",
+        f"  cards: {note_count}",
+        f"  notetypes: {model_count}",
+        "",
+    ]
+    if note_count:
+        samples = ", ".join(n.tf_id for n in plan.notes_to_delete[:DETAIL_SAMPLE_LIMIT])
+        if note_count > DETAIL_SAMPLE_LIMIT:
+            samples += ", ..."
+        lines.append(f"Cards to delete: {samples}")
+    if model_count:
+        samples = ", ".join(m.name for m in plan.models_to_delete[:DETAIL_SAMPLE_LIMIT])
+        if model_count > DETAIL_SAMPLE_LIMIT:
+            samples += ", ..."
+        lines.append(f"Notetypes to delete: {samples}")
+    lines += ["", "Deletion is permanent and cannot be undone. Continue?"]
+
+    return askUser("\n".join(lines), parent=parent or mw, defaultno=True)

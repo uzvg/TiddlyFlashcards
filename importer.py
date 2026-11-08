@@ -12,15 +12,18 @@ Collection。三层职责划分：
 - Notetype 以 `name` 为唯一匹配键；Note 以 `NoteSource.tf_id`（存储在 Anki
   Note 的 `TFNoteId` 字段）为唯一匹配键。
 - 所有仓库类的 Collection 均通过依赖注入传入，不在类内硬编码全局 `mw.col`。
-- 同步算法默认不删除外部列表中缺失的对象；删除仅当显式启用删除策略时执行。
+- 同步是 TiddlyWiki → Anki 的单向映射：导出结果中缺失的受管对象会被删除，
+  删除前须经确认回调同意；删除范围与顺序见 `docs/import_flow.md`。
 """
+
+from collections.abc import Callable
+from dataclasses import dataclass, field
 
 from anki.collection import Collection
 from anki.consts import QUEUE_TYPE_SUSPENDED
 from anki.decks import DeckId
 from anki.models import NotetypeDict
 from anki.notes import Note, NoteId
-from aqt.utils import showInfo
 
 from .exporter import WikiExportData
 from .models import FieldSource, ModelSource, NoteSource, TemplateSource
@@ -48,8 +51,10 @@ class AnkiModelRepository:
     # -- 读取 --
 
     def get_all(self) -> list[ModelSource]:
-        """读取所有 Notetype 并转换为 ModelSource。"""
-        return [self._to_source(m) for m in self.col.models.all()]
+        """读取所有受管 Notetype（含 TFNoteId 字段）并转换为 ModelSource。"""
+        return [
+            self._to_source(m) for m in self.col.models.all() if self._is_managed(m)
+        ]
 
     def get_by_name(self, name: str) -> ModelSource | None:
         """按名称查询 Notetype，不存在时返回 None。"""
@@ -70,10 +75,10 @@ class AnkiModelRepository:
         model["css"] = source.css
 
         for f in source.flds:
-            field = mm.new_field(f.name)
-            field["collapsed"] = f.collapsed
-            field["prevent_deletion"] = f.prevent_deletion
-            mm.add_field(model, field)
+            field_dict = mm.new_field(f.name)
+            field_dict["collapsed"] = f.collapsed
+            field_dict["prevent_deletion"] = f.prevent_deletion
+            mm.add_field(model, field_dict)
 
         for t in source.tmpls:
             template = mm.new_template(t.name)
@@ -95,20 +100,20 @@ class AnkiModelRepository:
         existing_dict["css"] = source.css
 
         # 逐个更新已有字段（仅更新可由外部自定义的属性，保留内部 ord）。
-        for field, field_source in zip(
+        for field_dict, field_source in zip(
             existing_dict["flds"], source.flds, strict=False
         ):
-            field["name"] = field_source.name
-            field["collapsed"] = field_source.collapsed
-            field["prevent_deletion"] = field_source.prevent_deletion
+            field_dict["name"] = field_source.name
+            field_dict["collapsed"] = field_source.collapsed
+            field_dict["prevent_deletion"] = field_source.prevent_deletion
 
         # 追加新增字段。
         for idx in range(len(existing_dict["flds"]), len(source.flds)):
             field_source = source.flds[idx]
-            field = mm.new_field(field_source.name)
-            field["collapsed"] = field_source.collapsed
-            field["prevent_deletion"] = field_source.prevent_deletion
-            mm.add_field(existing_dict, field)
+            field_dict = mm.new_field(field_source.name)
+            field_dict["collapsed"] = field_source.collapsed
+            field_dict["prevent_deletion"] = field_source.prevent_deletion
+            mm.add_field(existing_dict, field_dict)
 
         # 逐个更新已有模板。
         for template, template_source in zip(
@@ -129,21 +134,23 @@ class AnkiModelRepository:
         mm.update_dict(existing_dict)
 
     def delete(self, name: str) -> None:
-        """删除指定 Notetype；执行前检查依赖，避免删除仍有关联 Note 的 Notetype。"""
+        """删除指定受管 Notetype。
+
+        受管 note 已由同步器显式删除；若仍有非受管 note 使用该 notetype，
+        会随 notetype 一并被移除（单向同步的既定语义，见 docs/import_flow.md）。
+        """
         model = self.col.models.by_name(name)
         if model is None:
             raise ValueError(f"Notetype not found: {name}")
 
-        use_count = self.col.models.use_count(model)
-        if use_count > 0:
-            raise RuntimeError(
-                f"Cannot delete notetype '{name}': it is still used by "
-                f"{use_count} note(s). Detach or delete those notes first."
-            )
-
         self.col.models.remove(model["id"])
 
     # -- 内部辅助 --
+
+    @staticmethod
+    def _is_managed(model: NotetypeDict) -> bool:
+        """判断 Notetype 是否受管（含 TFNoteId 字段）。"""
+        return any(f["name"] == TF_ID_FIELD for f in model["flds"])
 
     def _require_model(self, name: str) -> NotetypeDict:
         model = self.col.models.by_name(name)
@@ -401,8 +408,29 @@ class AnkiNoteRepository:
 # ---------------------------------------------------------------------------
 
 
+@dataclass(slots=True)
+class SyncPlan:
+    """一次同步的写入计划：create / update / delete 集合（只读计算产物）。"""
+
+    models_to_create: list[ModelSource] = field(default_factory=list)
+    models_to_update: list[ModelSource] = field(default_factory=list)
+    models_to_delete: list[ModelSource] = field(default_factory=list)
+    notes_to_create: list[NoteSource] = field(default_factory=list)
+    notes_to_update: list[NoteSource] = field(default_factory=list)
+    notes_to_delete: list[NoteSource] = field(default_factory=list)
+
+    @property
+    def has_deletions(self) -> bool:
+        return bool(self.models_to_delete or self.notes_to_delete)
+
+
 class AnkiSyncer:
-    """协调仓库与同步过程，不直接操作 Anki 内部字典或数据库。"""
+    """协调仓库与同步过程，不直接操作 Anki 内部字典或数据库。
+
+    同步是 TiddlyWiki → Anki 的单向映射：导出结果中缺失的受管对象会被删除。
+    删除前须经 `confirm_deletion` 回调同意；回调未提供或返回 False 时中止同步，
+    不产生任何写。
+    """
 
     def __init__(
         self,
@@ -412,53 +440,6 @@ class AnkiSyncer:
         self.model_repository = model_repository
         self.note_repository = note_repository
         self.report: dict[str, dict[str, int]] = {}
-
-    def sync_models(self, sources: list[ModelSource]) -> None:
-        """按 name 同步 Notetype；缺失项默认不删除。"""
-        existing = {m.name: m for m in self.model_repository.get_all()}
-        incoming = {m.name: m for m in sources}
-
-        report = {"total": len(incoming), "added": 0, "updated": 0, "unchanged": 0}
-
-        for name in incoming.keys() - existing.keys():
-            self.model_repository.create(incoming[name])
-            report["added"] += 1
-
-        for name in incoming.keys() & existing.keys():
-            if existing[name] != incoming[name]:
-                self.model_repository.update(incoming[name])
-                report["updated"] += 1
-            else:
-                report["unchanged"] += 1
-
-        # 缺失项不做删除：Notetype 删除必须由显式删除策略控制。
-        self.report["models"] = report
-
-    def sync_notes(self, sources: list[NoteSource]) -> None:
-        """按 tf_id 同步 Note；缺失项默认不删除。"""
-        existing = {n.tf_id: n for n in self.note_repository.get_all()}
-        incoming = {n.tf_id: n for n in sources}
-
-        report = {"total": len(incoming), "added": 0, "updated": 0, "unchanged": 0}
-
-        for tf_id in incoming.keys() - existing.keys():
-            source = incoming[tf_id]
-            self.note_repository.create(source)
-            self.note_repository.sync_status(source)
-            report["added"] += 1
-
-        for tf_id in incoming.keys() & existing.keys():
-            source = incoming[tf_id]
-            if not self._notes_equal(existing[tf_id], source):
-                self.note_repository.update(source)
-                report["updated"] += 1
-            else:
-                report["unchanged"] += 1
-            # 无论内容是否变化，都检查并纠正挂起状态。
-            self.note_repository.sync_status(source)
-
-        # 缺失项不做删除：删除策略必须与完整同步范围一起显式启用。
-        self.report["notes"] = report
 
     @staticmethod
     def extract_sources(
@@ -474,20 +455,125 @@ class AnkiSyncer:
         notes = [en.note_info for en in data.note_sources]
         return models, notes
 
-    def sync_all(self, data: WikiExportData) -> None:
-        """依次同步 Notetype 与 Note，并输出统计信息。
+    def sync_all(
+        self,
+        data: WikiExportData,
+        confirm_deletion: Callable[[SyncPlan], bool] | None = None,
+    ) -> str | None:
+        """同步入口：提取 → 计划（只读）→ 确认 → 执行。
 
-        在校验通过前不会产生任何写操作，避免前置校验失败导致的局部写入。
+        返回报告文本；用户取消删除时返回 None（不产生任何写）。
         """
         model_sources, note_sources = self.extract_sources(data)
+        plan = self._compute_plan(model_sources, note_sources)
 
-        # 先同步 Notetype，再同步 Note。
-        self.sync_models(model_sources)
-        self.sync_notes(note_sources)
+        if plan.has_deletions and (
+            confirm_deletion is None or not confirm_deletion(plan)
+        ):
+            return None
 
-        showInfo(self._format_report())
+        self._execute(plan, note_sources)
+        self._record_report(plan, len(model_sources), len(note_sources))
+        return self._format_report()
 
-    # -- 内部辅助 --
+    # -- 计划（只读） --
+
+    def _compute_plan(
+        self,
+        model_sources: list[ModelSource],
+        note_sources: list[NoteSource],
+    ) -> SyncPlan:
+        """计算 create / update / delete 集合，不产生任何写。"""
+        existing_models = {m.name: m for m in self.model_repository.get_all()}
+        incoming_models = {m.name: m for m in model_sources}
+
+        models_to_create = [
+            incoming_models[name]
+            for name in incoming_models.keys() - existing_models.keys()
+        ]
+        models_to_update = [
+            incoming_models[name]
+            for name in incoming_models.keys() & existing_models.keys()
+            if existing_models[name] != incoming_models[name]
+        ]
+        models_to_delete = [
+            existing_models[name]
+            for name in existing_models.keys() - incoming_models.keys()
+        ]
+
+        existing_notes = {n.tf_id: n for n in self.note_repository.get_all()}
+        incoming_notes = {n.tf_id: n for n in note_sources}
+
+        notes_to_create = [
+            incoming_notes[tf_id]
+            for tf_id in incoming_notes.keys() - existing_notes.keys()
+        ]
+        notes_to_update = [
+            incoming_notes[tf_id]
+            for tf_id in incoming_notes.keys() & existing_notes.keys()
+            if not self._notes_equal(existing_notes[tf_id], incoming_notes[tf_id])
+        ]
+        notes_to_delete = [
+            existing_notes[tf_id]
+            for tf_id in existing_notes.keys() - incoming_notes.keys()
+        ]
+
+        return SyncPlan(
+            models_to_create=models_to_create,
+            models_to_update=models_to_update,
+            models_to_delete=models_to_delete,
+            notes_to_create=notes_to_create,
+            notes_to_update=notes_to_update,
+            notes_to_delete=notes_to_delete,
+        )
+
+    # -- 执行（写） --
+
+    def _execute(self, plan: SyncPlan, note_sources: list[NoteSource]) -> None:
+        """按固定顺序执行写入：model → note → note 删除 → model 删除。"""
+        for source in plan.models_to_create:
+            self.model_repository.create(source)
+        for source in plan.models_to_update:
+            self.model_repository.update(source)
+
+        for source in plan.notes_to_create:
+            self.note_repository.create(source)
+        for source in plan.notes_to_update:
+            self.note_repository.update(source)
+        for source in note_sources:
+            self.note_repository.sync_status(source)
+
+        for source in plan.notes_to_delete:
+            self.note_repository.delete(source.tf_id)
+        for source in plan.models_to_delete:
+            self.model_repository.delete(source.name)
+
+    # -- 报告 --
+
+    def _record_report(
+        self,
+        plan: SyncPlan,
+        model_total: int,
+        note_total: int,
+    ) -> None:
+        self.report["models"] = {
+            "total": model_total,
+            "added": len(plan.models_to_create),
+            "updated": len(plan.models_to_update),
+            "unchanged": model_total
+            - len(plan.models_to_create)
+            - len(plan.models_to_update),
+            "deleted": len(plan.models_to_delete),
+        }
+        self.report["notes"] = {
+            "total": note_total,
+            "added": len(plan.notes_to_create),
+            "updated": len(plan.notes_to_update),
+            "unchanged": note_total
+            - len(plan.notes_to_create)
+            - len(plan.notes_to_update),
+            "deleted": len(plan.notes_to_delete),
+        }
 
     @staticmethod
     def _notes_equal(a: NoteSource, b: NoteSource) -> bool:
@@ -507,11 +593,13 @@ class AnkiSyncer:
             f"Models    - total {model_report.get('total', 0)}, "
             f"added {model_report.get('added', 0)}, "
             f"updated {model_report.get('updated', 0)}, "
-            f"unchanged {model_report.get('unchanged', 0)}\n"
+            f"unchanged {model_report.get('unchanged', 0)}, "
+            f"deleted {model_report.get('deleted', 0)}\n"
             f"Notes     - total {note_report.get('total', 0)}, "
             f"added {note_report.get('added', 0)}, "
             f"updated {note_report.get('updated', 0)}, "
-            f"unchanged {note_report.get('unchanged', 0)}"
+            f"unchanged {note_report.get('unchanged', 0)}, "
+            f"deleted {note_report.get('deleted', 0)}"
         )
 
 
@@ -520,4 +608,5 @@ __all__ = [
     "AnkiModelRepository",
     "AnkiNoteRepository",
     "AnkiSyncer",
+    "SyncPlan",
 ]

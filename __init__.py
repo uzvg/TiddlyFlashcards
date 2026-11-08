@@ -2,6 +2,7 @@ import importlib
 
 from aqt import mw
 from aqt.qt import QAction
+from aqt.utils import showInfo
 
 from . import config
 from .config import load_config, open_config_dialog
@@ -9,7 +10,7 @@ from .exceptions import TiddlyFlashcardsError
 from .exporter import WikiExporter, WikiManager
 from .importer import AnkiModelRepository, AnkiNoteRepository, AnkiSyncer
 from .models import compose_model_css
-from .utils import ErrorReport, showError
+from .utils import ErrorReport, confirmDeletion, showError, showException
 
 
 def reload_config_dialog():
@@ -61,8 +62,24 @@ def begin_sync():
     model_repository = AnkiModelRepository(mw.col)
     note_repository = AnkiNoteRepository(mw.col, model_repository)
     service = AnkiSyncer(model_repository, note_repository)
-    service.sync_all(merged)
 
+    try:
+        report = service.sync_all(merged, confirm_deletion=confirmDeletion)
+    except (ValueError, RuntimeError) as exc:
+        showException(
+            exc,
+            summary=(
+                "TiddlyFlashcards stopped during the write phase. "
+                "Some changes may already have been applied."
+            ),
+        )
+        return
+
+    if report is None:
+        # 用户取消删除：本次同步未做任何写入。
+        return
+
+    showInfo(report)
     mw.col.save()
     mw.reset()
 
