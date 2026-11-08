@@ -32,8 +32,11 @@ class NoEnabledWikiError(TiddlyFlashcardsError):
     def __init__(self) -> None:
         super().__init__(
             title="No enabled wiki sources",
-            summary="TiddlyFlashcards has no enabled wiki sources to export.",
-            details="Enable at least one wiki in the plugin config.",
+            summary=(
+                "TiddlyFlashcards has no enabled wiki sources to export. "
+                "Please enable at least one wiki in the plugin config."
+            ),
+            details="",
         )
 
 
