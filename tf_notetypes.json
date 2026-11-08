@@ -1,164 +1,152 @@
 {
-  "tf_models": {
-    "TFBasic": {
-      "type": 0,
-      "sortf": 0,
-      "css": "",
-      "flds": [
-        {
-          "name": "Front",
-          "collapsed": true,
-          "prevent_deletion": true
-        },
-        {
-          "name": "Back",
-          "collapsed": true,
-          "prevent_deletion": true
-        },
-        {
-          "name": "TFNoteId",
-          "collapsed": true,
-          "prevent_deletion": true
-        }
-      ],
-      "tmpls": [
-        {
-          "name": "Card 1",
-          "qfmt": "{{Front}}\n",
-          "afmt": "{{FrontSide}}\n<hr id=\"answer\">\n\n{{Back}}\n\n<div class=\"tf-link\">\n    <a href=\"http://127.0.0.1:8080/tiddler/{{TFNoteId}}\">\n        Open in TiddlyWiki\n    </a>\n</div>\n"
-        }
-      ]
-    },
-    "TFCloze": {
-      "type": 1,
-      "sortf": 0,
-      "css": "",
-      "flds": [
-        {
-          "name": "Text",
-          "collapsed": true,
-          "prevent_deletion": true
-        },
-        {
-          "name": "Back Extra",
-          "collapsed": true,
-          "prevent_deletion": true
-        },
-        {
-          "name": "TFNoteId",
-          "collapsed": true,
-          "prevent_deletion": true
-        }
-      ],
-      "tmpls": [
-        {
-          "name": "Card 1",
-          "qfmt": "{{cloze:Text}}\n",
-          "afmt": "{{cloze:Text}}\n\n<br>\n\n{{Back Extra}}\n\n<div class=\"tf-link\">\n    <a href=\"http://127.0.0.1:8080/tiddler/{{TFNoteId}}\">\n        Open in TiddlyWiki\n    </a>\n</div>\n"
-        }
-      ]
-    },
-    "TFType": {
-      "type": 0,
-      "sortf": 0,
-      "css": "",
-      "flds": [
-        {
-          "name": "Front",
-          "collapsed": true,
-          "prevent_deletion": true
-        },
-        {
-          "name": "Back",
-          "collapsed": true,
-          "prevent_deletion": true
-        },
-        {
-          "name": "TFNoteId",
-          "collapsed": true,
-          "prevent_deletion": true
-        }
-      ],
-      "tmpls": [
-        {
-          "name": "Card 1",
-          "qfmt": "{{Front}}\n\n{{type:Back}}\n",
-          "afmt": "{{Front}}\n\n<hr id=answer>\n\n{{type:Back}}\n\n<div class=\"tf-link\">\n    <a href=\"http://127.0.0.1:8080/tiddler/{{TFNoteId}}\">\n        Open in TiddlyWiki\n    </a>\n</div>\n"
-        }
-      ]
-    },
-    "TFPair": {
-      "type": 0,
-      "sortf": 0,
-      "css": "",
-      "flds": [
-        {
-          "name": "Front",
-          "collapsed": true,
-          "prevent_deletion": true
-        },
-        {
-          "name": "Back",
-          "collapsed": true,
-          "prevent_deletion": true
-        },
-        {
-          "name": "TFNoteId",
-          "collapsed": true,
-          "prevent_deletion": true
-        }
-      ],
-      "tmpls": [
-        {
-          "name": "Card 1",
-          "qfmt": "{{Front}}\n",
-          "afmt": "{{FrontSide}}\n\n<hr id=answer>\n\n{{Back}}\n\n<div class=\"tf-link\">\n    <a href=\"http://127.0.0.1:8080/tiddler/{{TFNoteId}}\">\n        Open in TiddlyWiki\n    </a>\n</div>\n"
-        },
-        {
-          "name": "Card 2",
-          "qfmt": "{{Back}}\n",
-          "afmt": "{{FrontSide}}\n\n<hr id=answer>\n\n{{Front}}\n\n<div class=\"tf-link\">\n    <a href=\"http://127.0.0.1:8080/tiddler/{{TFNoteId}}\">\n        Open in TiddlyWiki\n    </a>\n</div>\n"
-        }
-      ]
-    },
-    "TFOptionalPair": {
-      "type": 0,
-      "sortf": 0,
-      "css": "",
-      "flds": [
-        {
-          "name": "Front",
-          "collapsed": true,
-          "prevent_deletion": true
-        },
-        {
-          "name": "Back",
-          "collapsed": true,
-          "prevent_deletion": true
-        },
-        {
-          "name": "Add Reverse",
-          "collapsed": true,
-          "prevent_deletion": true
-        },
-        {
-          "name": "TFNoteId",
-          "collapsed": true,
-          "prevent_deletion": true
-        }
-      ],
-      "tmpls": [
-        {
-          "name": "Card 1",
-          "qfmt": "{{Front}}\n",
-          "afmt": "{{FrontSide}}\n\n<hr id=answer>\n\n{{Back}}\n\n<div class=\"tf-link\">\n    <a href=\"http://127.0.0.1:8080/tiddler/{{TFNoteId}}\">\n        Open in TiddlyWiki\n    </a>\n</div>\n"
-        },
-        {
-          "name": "Card 2",
-          "qfmt": "{{#Add Reverse}}{{Back}}{{/Add Reverse}}\n",
-          "afmt": "{{FrontSide}}\n\n<hr id=answer>\n\n{{Front}}\n\n<div class=\"tf-link\">\n    <a href=\"http://127.0.0.1:8080/tiddler/{{TFNoteId}}\">\n        Open in TiddlyWiki\n    </a>\n</div>\n"
-        }
-      ]
-    }
+  "TFBasic": {
+    "model_type": 0,
+    "fields": [
+      {
+        "name": "Front",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "Back",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "TFNoteId",
+        "collapsed": true,
+        "prevent_deletion": true
+      }
+    ],
+    "templates": [
+      {
+        "name": "Card 1",
+        "front": "{{Front}}\n",
+        "back": "{{FrontSide}}\n<hr id=\"answer\">\n\n{{Back}}\n\n<div class=\"tf-link\">\n    <a href=\"{{WikiUrl}}/tiddler/{{TFNoteId}}\">\n        Open in TiddlyWiki\n    </a>\n</div>\n"
+      }
+    ]
+  },
+  "TFCloze": {
+    "model_type": 1,
+    "fields": [
+      {
+        "name": "Text",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "Back Extra",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "TFNoteId",
+        "collapsed": true,
+        "prevent_deletion": true
+      }
+    ],
+    "templates": [
+      {
+        "name": "Card 1",
+        "front": "{{cloze:Text}}\n",
+        "back": "{{cloze:Text}}\n\n<br>\n\n{{Back Extra}}\n\n<div class=\"tf-link\">\n    <a href=\"{{WikiUrl}}/tiddler/{{TFNoteId}}\">\n        Open in TiddlyWiki\n    </a>\n</div>\n"
+      }
+    ]
+  },
+  "TFType": {
+    "model_type": 0,
+    "fields": [
+      {
+        "name": "Front",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "Back",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "TFNoteId",
+        "collapsed": true,
+        "prevent_deletion": true
+      }
+    ],
+    "templates": [
+      {
+        "name": "Card 1",
+        "front": "{{Front}}\n\n{{type:Back}}\n",
+        "back": "{{Front}}\n\n<hr id=answer>\n\n{{type:Back}}\n\n<div class=\"tf-link\">\n    <a href=\"{{WikiUrl}}/tiddler/{{TFNoteId}}\">\n        Open in TiddlyWiki\n    </a>\n</div>\n"
+      }
+    ]
+  },
+  "TFPair": {
+    "model_type": 0,
+    "fields": [
+      {
+        "name": "Front",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "Back",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "TFNoteId",
+        "collapsed": true,
+        "prevent_deletion": true
+      }
+    ],
+    "templates": [
+      {
+        "name": "Card 1",
+        "front": "{{Front}}\n",
+        "back": "{{FrontSide}}\n\n<hr id=answer>\n\n{{Back}}\n\n<div class=\"tf-link\">\n    <a href=\"{{WikiUrl}}/tiddler/{{TFNoteId}}\">\n        Open in TiddlyWiki\n    </a>\n</div>\n"
+      },
+      {
+        "name": "Card 2",
+        "front": "{{Back}}\n",
+        "back": "{{FrontSide}}\n\n<hr id=answer>\n\n{{Front}}\n\n<div class=\"tf-link\">\n    <a href=\"{{WikiUrl}}/tiddler/{{TFNoteId}}\">\n        Open in TiddlyWiki\n    </a>\n</div>\n"
+      }
+    ]
+  },
+  "TFOptionalPair": {
+    "model_type": 0,
+    "fields": [
+      {
+        "name": "Front",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "Back",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "Add Reverse",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "TFNoteId",
+        "collapsed": true,
+        "prevent_deletion": true
+      }
+    ],
+    "templates": [
+      {
+        "name": "Card 1",
+        "front": "{{Front}}\n",
+        "back": "{{FrontSide}}\n\n<hr id=answer>\n\n{{Back}}\n\n<div class=\"tf-link\">\n    <a href=\"{{WikiUrl}}/tiddler/{{TFNoteId}}\">\n        Open in TiddlyWiki\n    </a>\n</div>\n"
+      },
+      {
+        "name": "Card 2",
+        "front": "{{#Add Reverse}}{{Back}}{{/Add Reverse}}\n",
+        "back": "{{FrontSide}}\n\n<hr id=answer>\n\n{{Front}}\n\n<div class=\"tf-link\">\n    <a href=\"{{WikiUrl}}/tiddler/{{TFNoteId}}\">\n        Open in TiddlyWiki\n    </a>\n</div>\n"
+      }
+    ]
   }
 }

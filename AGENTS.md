@@ -35,7 +35,7 @@ TiddlyFlashcards 是一个 Anki 2.1 插件（最低要求 Anki 26.09），用于
 
 ## 数据文件与代码生成
 
-- `tf_notetypes.toml` 是声明式的笔记类型源文件。使用 `python tools/render_notetypes.py`（可附加 `--url ...`）重新生成 `tf_notetypes.json`，不要手动编辑该 JSON。
+- `tf_notetypes.toml` 是声明式的笔记类型源文件。使用 `python tools/render_notetypes.py` 重新生成 `tf_notetypes.json`（一对一 TOML→JSON 转换，不改键名、不替换占位符），不要手动编辑该 JSON。
 - `tf_notetypes.toml` 中的注释引用了 `parse_notetypes()` / `render_specs()` / `REBUILD_PENDING`；这些符号在本仓库中并不存在。
 
 ## 约定
