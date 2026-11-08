@@ -15,11 +15,11 @@
 
 `WikiManager.build_export()` 是同步前唯一的公开入口，内部依次执行：
 
-1. 取启用 wiki；为空则抛 `NoEnabledWikiError`；逐个导出，按配置顺序得到 `list[WikiExportData]`。
-2. 调用 `_validate_results(exported_wikis)` 对全部导出产物做独立校验。
-3. 调用 `_merge_results(exported_wikis)` 合并数据，返回一个 `WikiExportData`；同名 model 只保留第一个 `ExportModel`，note 全部拼接。校验失败时不会执行合并。
+1. 取启用 wiki；为空则抛 `NoEnabledWikiError`；逐个导出，按配置顺序得到 `wiki_exports: list[WikiExportData]`。
+2. 调用 `_validate_results(sources, wiki_exports)` 对全部导出产物做独立校验。
+3. 调用 `_merge_results(wiki_exports)` 合并数据，返回一个 `WikiExportData`；同名 model 只保留第一个 `ExportModel`，note 全部拼接。校验失败时不会执行合并。
 
-`_validate_results(exported_wikis)` 是独立的内部校验方法，只依赖传入的导出产物，不读取 `build_export()` 的局部变量，便于单独测试。空 model / 空 note 的 details 需要列出启用 wiki，而 `ExportModel` / `ExportNote` 此时可能为空，无法从中取得 `wiki_info`，因此该方法通过 `self.get_enabled_sources()` 取启用 wiki 列表；不为此给 `WikiExportData` 增加字段。
+`_validate_results(sources, wiki_exports)` 是独立的内部校验方法，直接接收 `build_export()` 已取到的 `sources` 与导出产物，便于单独测试，也避免重复读取配置。空 model / 空 note 的 details 需要列出启用 wiki，而 `ExportModel` / `ExportNote` 此时可能为空，无法从中取得 `wiki_info`，因此从 `sources` 构造 `(name, path)` 列表；不为此给 `WikiExportData` 增加字段。
 
 `_merge_results(exported_wikis)` 返回的 `WikiExportData` 仍然是 `ExportModel` / `ExportNote` 列表，因此 `wiki_info` 自然保留；它只在校验阶段有意义，importer 导入时只读取 `model_info` / `note_info`。model 按 `model_info.name` 去重并保留第一个，是为了避免 importer 的全局唯一检查拒绝“同名且定义相同”的重复 model；note 不去重，`tf_id` 全局唯一已由 `_validate_results()` 保证。
 

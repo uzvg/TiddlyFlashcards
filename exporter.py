@@ -221,25 +221,29 @@ class WikiManager:
         if not sources:
             raise NoEnabledWikiError()
 
-        exported_wikis = [self.exporter.export(source) for source in sources]
+        wiki_exports = [self.exporter.export(source) for source in sources]
 
-        self._validate_results(exported_wikis)
+        self._validate_results(sources, wiki_exports)
 
-        return self._merge_results(exported_wikis)
+        return self._merge_results(wiki_exports)
 
-    def _validate_results(self, exported_wikis: list[WikiExportData]) -> None:
+    def _validate_results(
+        self,
+        sources: list[WikiSource],
+        wiki_exports: list[WikiExportData],
+    ) -> None:
         """依序校验所有 wiki 的导出产物，任一问题即抛出领域异常。
 
         顺序见 docs/sync_validation.md：空 model → model 冲突 → 空 note
         → 未知 model → 重复 tf_id。
         """
-        enabled_wikis = [(wiki.name, wiki.path) for wiki in self.get_enabled_sources()]
+        enabled_wiki_refs = [(wiki.name, wiki.path) for wiki in sources]
 
         all_models = [
-            model for wiki_data in exported_wikis for model in wiki_data.model_sources
+            model for wiki_data in wiki_exports for model in wiki_data.model_sources
         ]
         if not all_models:
-            raise EmptyModelExportError(enabled_wikis)
+            raise EmptyModelExportError(enabled_wiki_refs)
 
         models_by_name: dict[str, list[ExportModel]] = defaultdict(list)
         for model in all_models:
@@ -259,10 +263,10 @@ class WikiManager:
             raise ConflictingModelError(conflicts)
 
         all_notes = [
-            note for wiki_data in exported_wikis for note in wiki_data.note_sources
+            note for wiki_data in wiki_exports for note in wiki_data.note_sources
         ]
         if not all_notes:
-            raise EmptyNoteExportError(enabled_wikis)
+            raise EmptyNoteExportError(enabled_wiki_refs)
 
         model_names = {model.model_info.name for model in all_models}
         unknown: dict[str, list[tuple[str, str, str]]] = defaultdict(list)
@@ -286,11 +290,11 @@ class WikiManager:
             raise DuplicateTfIdError(duplicates)
 
     @staticmethod
-    def _merge_results(exported_wikis: list[WikiExportData]) -> WikiExportData:
+    def _merge_results(wiki_exports: list[WikiExportData]) -> WikiExportData:
         """合并所有 wiki 的导出产物；同名 model 只保留第一个。"""
         models: dict[str, ExportModel] = {}
         notes: list[ExportNote] = []
-        for wiki_data in exported_wikis:
+        for wiki_data in wiki_exports:
             for export_model in wiki_data.model_sources:
                 models.setdefault(export_model.model_info.name, export_model)
             notes.extend(wiki_data.note_sources)
