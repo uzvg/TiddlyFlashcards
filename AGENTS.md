@@ -16,7 +16,7 @@ TiddlyFlashcards 是一个 Anki 2.1 插件（最低要求 Anki 26.09），用于
 - `__init__.py` — 插件入口。注册配置对话框和 Tools 菜单项。其导入语句在 Anki 启动时执行，因此导入错误会导致插件无法加载。
 - `config.py` — 配置 dataclass/默认值以及 Qt 配置对话框。设置通过 `mw.addonManager` 持久化到插件的 `meta.json`（已 gitignore）。
 - `exporter.py` — 为每个启用的 `WikiSource` 调用 TiddlyWiki CLI，并将渲染出的 JSON 解析为 `WikiExportData`。文件夹型与单文件 HTML 型维基使用不同的命令形式。
-- `exceptions.py` — 同步前校验的领域异常，只携带 `title` / `summary` / `details` 数据，不导入 Qt；由 `__init__.py` 捕获并交给 `utils.showError` 展示。
+- `exceptions.py` — 同步流程的领域异常（校验与导出失败），只携带 `title` / `summary` / `details` 数据，不导入 Qt；由 `__init__.py` 捕获并交给 `utils.showError` 展示。
 - `models.py` — 笔记类型/笔记的 dataclass 以及 CSS 组合。Anki 内部属性（`id`、`ord`、`mod` 等）被有意排除。
 - `utils.py` — 错误报告对话框（标题常驻、详情折叠、复制调试信息）。公开入口为 `showError` / `showException`，命名对齐 `aqt.utils.showCritical`。
 - `importer.py` — `AnkiModelRepository` / `AnkiNoteRepository` 的 CRUD 以及 `AnkiSyncer` 的差异编排。同步策略位于此处。

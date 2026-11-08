@@ -19,8 +19,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from aqt.utils import showCritical
-
 from .config import WIKI_TYPE_HTML, PluginConfig, WikiSource
 from .exceptions import (
     ConflictingModelError,
@@ -28,7 +26,9 @@ from .exceptions import (
     EmptyModelExportError,
     EmptyNoteExportError,
     NoEnabledWikiError,
+    TiddlyWikiBinaryError,
     UnknownModelError,
+    WikiExportError,
 )
 from .models import ModelSource, NoteSource
 
@@ -117,7 +117,7 @@ class WikiExporter:
         bin_path = configured_bin.strip() or "tiddlywiki"
         resolved = shutil.which(bin_path)
         if not resolved:
-            raise FileNotFoundError(f"TiddlyWiki binary not found: {bin_path}")
+            raise TiddlyWikiBinaryError(bin_path)
         return resolved
 
     @staticmethod
@@ -151,7 +151,11 @@ class WikiExporter:
 
     def _render_json(self, source: WikiSource) -> dict[str, Any]:
         """调用 tiddlywiki 渲染 schema，将结果解析为 JSON（临时文件自动清理）。"""
-        wiki_path = self._validate_source(source)
+        try:
+            wiki_path = self._validate_source(source)
+        except FileNotFoundError as exc:
+            raise WikiExportError((source.name, source.path), str(exc)) from exc
+
         fd, tmp_path = tempfile.mkstemp()
         os.close(fd)
 
@@ -168,28 +172,27 @@ class WikiExporter:
 
             return json.loads(output)
         except subprocess.CalledProcessError as exc:
-            showCritical(f"TiddlyFlashcards export failed:\n\n{exc.stderr or exc}")
-            raise RuntimeError("TiddlyWiki export failed") from exc
+            raise WikiExportError(
+                (source.name, source.path),
+                f"TiddlyWiki exited with an error:\n\n{exc.stderr or exc}",
+            ) from exc
         except subprocess.TimeoutExpired as exc:
-            showCritical(
-                f"TiddlyFlashcards export timed out for wiki '{source.name}'.\n\n"
-                "Please check whether TiddlyWiki is hung or the wiki is too large."
-            )
-            raise RuntimeError("TiddlyWiki export timed out") from exc
+            raise WikiExportError(
+                (source.name, source.path),
+                "TiddlyWiki timed out. Please check whether it is hung "
+                "or the wiki is too large.",
+            ) from exc
+        except json.JSONDecodeError as exc:
+            raise WikiExportError(
+                (source.name, source.path),
+                "Invalid JSON output. Please check your render template.",
+            ) from exc
         except OSError as exc:
-            # 二进制缺失、无执行权限等；避免裸 traceback 冒泡到同步流程。
-            showCritical(
-                "TiddlyFlashcards could not run the TiddlyWiki binary.\n\n"
-                f"Wiki: {source.name}\nPath: {source.path}\n\n{exc}"
-            )
-            raise RuntimeError("Failed to run TiddlyWiki") from exc
-        except json.JSONDecodeError:
-            showCritical(
-                "Invalid JSON output from TiddlyFlashcards. "
-                "Please check your template output.\n\n"
-                f"Wiki: {source.name}\nPath: {source.path}"
-            )
-            raise
+            # 二进制缺失、无执行权限等。
+            raise WikiExportError(
+                (source.name, source.path),
+                f"Could not run the TiddlyWiki binary:\n\n{exc}",
+            ) from exc
         finally:
             Path(tmp_path).unlink(missing_ok=True)
 

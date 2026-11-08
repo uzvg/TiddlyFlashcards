@@ -38,7 +38,7 @@ except TiddlyFlashcardsError as exc:
     return
 ```
 
-“停止程序”指中止本次同步并返回，不退出 Anki。底层 `_render_json()` 现有的 `showCritical` 错误展示可后续统一迁移，不属于本设计范围。
+“停止程序”指中止本次同步并返回，不退出 Anki。底层 `_render_json()` 的失败（路径无效、子进程退出、超时、二进制缺失、JSON 解析失败）统一转换为 `WikiExportError`；配置的 `tiddlywiki` 二进制找不到时由 `_resolve_bin()` 抛 `TiddlyWikiBinaryError`。二者都继承 `TiddlyFlashcardsError`，由 `begin_sync()` 捕获并走同一错误对话框展示。
 
 ## 3. 校验顺序
 
@@ -85,8 +85,10 @@ Note 的重复判定不比较 `NoteSource` 内容。Anki 以 `TFNoteId`（即 `t
 | `EmptyNoteExportError` | 启用 wiki 的 `(name, path)` 列表 |
 | `UnknownModelError` | `{model_name: [(wiki_name, wiki_path, tf_id), ...]}` |
 | `DuplicateTfIdError` | `{tf_id: [(wiki_name, wiki_path), ...]}` |
+| `WikiExportError` | `wiki (name, path)` + `reason`（导出失败原因） |
+| `TiddlyWikiBinaryError` | 尝试的二进制路径字符串 |
 
-载荷中的 wiki 信息使用 `(name, path)`，不传递 `WikiSource` 或 `ExportModel` / `ExportNote`，避免 `exceptions.py` 依赖 exporter 的类型。
+载荷中的 wiki 信息使用 `(name, path)`，不传递 `WikiSource` 或 `ExportModel` / `ExportNote`，避免 `exceptions.py` 依赖 exporter 的类型。`WikiExportError` / `TiddlyWikiBinaryError` 在导出阶段抛出（先于上述校验），同样由 `begin_sync()` 统一展示。
 
 ## 6. Details 格式
 
@@ -164,4 +166,3 @@ Found 512 tf_id conflicts across 3 wikis.
 - 不修改 `importer.py` 的同步行为。
 - 不在本次实现删除逻辑；但文档与规则必须承认 Anki 数据是 TiddlyWiki 工作空间的单向映射，删除最终会存在。
 - 不支持 `(wiki, tf_id)` 复合身份。若未来需要同一 `tf_id` 在不同 wiki 中作为独立 note 共存，必须先设计稳定的 wiki id、`TFWiki` 字段或复合键、importer 匹配逻辑、旧 note 迁移以及删除语义；不能仅靠放宽 `_validate_results()` 实现。
-- 不迁移 `_render_json()` 的 `showCritical` 错误展示；该工作可单独进行。

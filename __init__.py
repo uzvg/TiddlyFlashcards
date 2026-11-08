@@ -50,9 +50,9 @@ def begin_sync():
     assert mw.col is not None
     cfg = load_config()
     css = compose_model_css(cfg)
-    manager = WikiManager(cfg, WikiExporter(cfg.tiddlywiki_path, css=css))
 
     try:
+        manager = WikiManager(cfg, WikiExporter(cfg.tiddlywiki_path, css=css))
         merged = manager.build_export()
     except TiddlyFlashcardsError as exc:
         showError(ErrorReport(exc.title, exc.summary, exc.details))

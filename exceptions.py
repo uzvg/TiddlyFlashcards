@@ -132,3 +132,22 @@ class DuplicateTfIdError(TiddlyFlashcardsError):
             summary="The same TFNoteId appears in more than one wiki. Sync was cancelled.",
             details="\n".join(lines),
         )
+
+
+class WikiExportError(TiddlyFlashcardsError):
+    def __init__(self, wiki: WikiRef, reason: str) -> None:
+        name, path = wiki
+        super().__init__(
+            title="TiddlyWiki export failed",
+            summary=f"Failed to export wiki '{name}'. Sync was cancelled.",
+            details=f"Wiki: {name} ({path})\n\n{reason}",
+        )
+
+
+class TiddlyWikiBinaryError(TiddlyFlashcardsError):
+    def __init__(self, bin_path: str) -> None:
+        super().__init__(
+            title="TiddlyWiki binary not found",
+            summary="The TiddlyWiki executable could not be found.",
+            details=f"Tried: {bin_path}",
+        )
