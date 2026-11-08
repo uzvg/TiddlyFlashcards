@@ -58,13 +58,10 @@ def begin_sync():
         showError(ErrorReport(exc.title, exc.summary, exc.details))
         return
 
-    model_sources = [em.model_info for em in merged.model_sources]
-    note_sources = [en.note_info for en in merged.note_sources]
-
     model_repository = AnkiModelRepository(mw.col)
     note_repository = AnkiNoteRepository(mw.col, model_repository)
     service = AnkiSyncer(model_repository, note_repository)
-    service.sync_all(model_sources, note_sources)
+    service.sync_all(merged)
 
     mw.col.save()
     mw.reset()

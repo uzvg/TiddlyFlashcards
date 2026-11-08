@@ -15,8 +15,6 @@ Collection。三层职责划分：
 - 同步算法默认不删除外部列表中缺失的对象；删除仅当显式启用删除策略时执行。
 """
 
-from collections.abc import Sequence
-
 from anki.collection import Collection
 from anki.consts import QUEUE_TYPE_SUSPENDED
 from anki.decks import DeckId
@@ -24,6 +22,7 @@ from anki.models import NotetypeDict
 from anki.notes import Note, NoteId
 from aqt.utils import showInfo
 
+from .exporter import WikiExportData
 from .models import FieldSource, ModelSource, NoteSource, TemplateSource
 
 # NoteSource.tf_id 在 Anki Note 中存储的字段名。
@@ -416,8 +415,6 @@ class AnkiSyncer:
 
     def sync_models(self, sources: list[ModelSource]) -> None:
         """按 name 同步 Notetype；缺失项默认不删除。"""
-        self._ensure_unique("Notetype name", [m.name for m in sources])
-
         existing = {m.name: m for m in self.model_repository.get_all()}
         incoming = {m.name: m for m in sources}
 
@@ -439,8 +436,6 @@ class AnkiSyncer:
 
     def sync_notes(self, sources: list[NoteSource]) -> None:
         """按 tf_id 同步 Note；缺失项默认不删除。"""
-        self._ensure_unique("tf_id", [n.tf_id for n in sources])
-
         existing = {n.tf_id: n for n in self.note_repository.get_all()}
         incoming = {n.tf_id: n for n in sources}
 
@@ -465,17 +460,26 @@ class AnkiSyncer:
         # 缺失项不做删除：删除策略必须与完整同步范围一起显式启用。
         self.report["notes"] = report
 
-    def sync_all(
-        self,
-        model_sources: list[ModelSource],
-        note_sources: list[NoteSource],
-    ) -> None:
+    @staticmethod
+    def extract_sources(
+        data: WikiExportData,
+    ) -> tuple[list[ModelSource], list[NoteSource]]:
+        """从 WikiExportData 提取 ModelSource / NoteSource 列表。
+
+        这是把 wiki 派生信息（WikiSource 的 name / url）折入 note 字段的唯一接缝；
+        目前仅取出 model_info / note_info，未来若需注入 WikiName / WikiUrl 字段
+        只在此处完成（见 docs/import_flow.md 第 2 节）。
+        """
+        models = [em.model_info for em in data.model_sources]
+        notes = [en.note_info for en in data.note_sources]
+        return models, notes
+
+    def sync_all(self, data: WikiExportData) -> None:
         """依次同步 Notetype 与 Note，并输出统计信息。
 
         在校验通过前不会产生任何写操作，避免前置校验失败导致的局部写入。
         """
-        self._ensure_unique("Notetype name", [m.name for m in model_sources])
-        self._ensure_unique("tf_id", [n.tf_id for n in note_sources])
+        model_sources, note_sources = self.extract_sources(data)
 
         # 先同步 Notetype，再同步 Note。
         self.sync_models(model_sources)
@@ -493,21 +497,6 @@ class AnkiSyncer:
         if dict(a.fields) != dict(b.fields):
             return False
         return sorted(a.tags) == sorted(b.tags)
-
-    @staticmethod
-    def _ensure_unique(label: str, values: Sequence[str]) -> None:
-        """检测并报告输入中重复的键。"""
-        seen: set[str] = set()
-        duplicates: list[str] = []
-        for value in values:
-            if value in seen and value not in duplicates:
-                duplicates.append(value)
-            seen.add(value)
-        if duplicates:
-            raise ValueError(
-                f"Duplicate {label} in input: {', '.join(sorted(duplicates))}. "
-                "Stop syncing to avoid ambiguous writes."
-            )
 
     def _format_report(self) -> str:
         """将统计信息格式化为可读文本。"""
