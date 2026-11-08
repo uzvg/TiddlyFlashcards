@@ -30,7 +30,7 @@ TiddlyFlashcards 是一个 Anki 2.1 插件（最低要求 Anki 26.09），用于
 - 笔记类型的字段/模板布局仅允许追加。现有名称序列必须是目标序列的精确前缀；重排、删除或在中间插入都会抛出异常。笔记不能切换笔记类型。
 - 缺失的牌组会自动创建。`status == "suspend"` 会暂停某条笔记的所有卡片；其他任何值都会取消暂停。
 - 当没有启用的维基、所有启用维基合计导出零个 model 或零个 note、跨维基 model 定义冲突、note 引用未导出的 model，或 `TFNoteId` 重复时，同步会在任何写入之前中止。
-- 同步前校验统一由 `WikiManager.validate_results()` 独立完成，不要内联到 `export_all`；校验顺序、异常类型和 details 格式见 `docs/sync_validation.md`。
+- 同步前流程由 `begin_sync()` 显式按 `WikiManager.export_all()` → `validate_results()` → `merge_results()` 执行；`export_all()` 只导出并返回 `list[WikiExportData]`，`merge_results()` 返回合并后的 `WikiExportData`（同名 model 保留第一个）。校验由独立的 `validate_results()` 完成，不要内联；顺序、异常类型和 details 格式见 `docs/sync_validation.md`。
 - 导出需要一个可用的 `tiddlywiki` 可执行文件（配置的路径或 `PATH`），以及每个维基中的渲染模板 tiddler `$:/plugins/uzvg/TiddlyFlashcards/templates/tf-render-template`。该模板随 TiddlyWiki 插件提供，不在本仓库中。CLI 形式记录在 `docs/tiddlywiki_render.md`。
 
 ## 数据文件与代码生成

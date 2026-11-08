@@ -1,6 +1,6 @@
-# 多 Wiki 同步前校验
+# 多 Wiki 同步校验与合并
 
-本文描述 `exporter.py` 中 `WikiManager` 的同步前校验设计。校验在**所有启用 wiki 导出完成后、任何 Anki 写入之前**执行；任一检查失败都会中止本次同步，并保持 Anki 集合不变。
+本文描述 `exporter.py` 中 `WikiManager` 的导出后校验与合并设计。校验在**所有启用 wiki 导出完成后、任何 Anki 写入之前**执行；任一检查失败都会中止本次同步，并保持 Anki 集合不变。
 
 ## 1. 数据映射与不变量
 
@@ -13,14 +13,15 @@
 
 ## 2. 入口与职责
 
-`WikiManager.export_all()` 只负责编排：
+`begin_sync()` 显式按三步执行，调用点即可看出顺序：
 
-1. 取启用 wiki；为空则抛 `NoEnabledWikiError`。
-2. 逐个导出，得到 `list[WikiExportData]`。
-3. 调用独立的公共方法 `WikiManager.validate_results(exported_wikis)`。
-4. 返回导出结果。
+1. `export_all()`：取启用 wiki；为空则抛 `NoEnabledWikiError`；逐个导出，按配置顺序返回 `list[WikiExportData]`。只负责导出，不做校验或合并。
+2. `validate_results(exported_wikis)`：对全部导出产物做独立校验。
+3. `merge_results(exported_wikis)`：返回一个合并后的 `WikiExportData`；同名 model 只保留第一个 `ExportModel`，note 全部拼接。必须在 `validate_results()` 之后调用。
 
-`validate_results(exported_wikis)` 是 `WikiManager` 的独立方法，只依赖传入的导出产物，不读取 `export_all` 的局部变量，便于单独调用和测试。
+`validate_results(exported_wikis)` 是 `WikiManager` 的独立方法，只依赖传入的导出产物，不读取 `export_all()` 的局部变量，便于单独调用和测试。空 model / 空 note 的 details 需要列出启用 wiki，而 `ExportModel` / `ExportNote` 此时可能为空，无法从中取得 `wiki_info`，因此该方法通过 `self.get_enabled_sources()` 取启用 wiki 列表；不为此给 `WikiExportData` 增加字段。
+
+`merge_results(exported_wikis)` 返回的 `WikiExportData` 仍然是 `ExportModel` / `ExportNote` 列表，因此 `wiki_info` 自然保留；它只在校验阶段有意义，importer 导入时只读取 `model_info` / `note_info`。model 按 `model_info.name` 去重并保留第一个，是为了避免 importer 的全局唯一检查拒绝“同名且定义相同”的重复 model；note 不去重，`tf_id` 全局唯一已由 `validate_results()` 保证。
 
 `exceptions.py` 只定义异常类型、结构化冲突数据和用户可读的 `title` / `summary` / `details`，不导入 `aqt`、Qt 或 `exporter.py`，避免循环导入并保持可测试性。异常只负责描述失败，不负责弹窗。
 
@@ -29,6 +30,11 @@ UI 展示由 `__init__.py` 的 `begin_sync()` 统一完成：
 ```python
 try:
     exports = manager.export_all()
+    manager.validate_results(exports)
+    merged = manager.merge_results(exports)
+    model_sources = [em.model_info for em in merged.model_sources]
+    note_sources = [en.note_info for en in merged.note_sources]
+    service.sync_all(model_sources, note_sources)
 except TiddlyFlashcardsError as exc:
     showError(ErrorReport(exc.title, exc.summary, exc.details))
     return
@@ -38,7 +44,7 @@ except TiddlyFlashcardsError as exc:
 
 ## 3. 校验顺序
 
-顺序固定如下；先发现的问题先报告，避免在不可用数据上继续做无意义的检查。
+顺序固定如下；先发现的问题先报告，避免在不可用数据上继续做无意义的检查。第 1 项由 `export_all()` 在导出前检查，第 2-6 项由 `validate_results()` 按顺序检查。
 
 | 顺序 | 条件 | 异常 |
 |---|---|---|
@@ -59,7 +65,7 @@ except TiddlyFlashcardsError as exc:
 
 当前 `css` 由插件配置统一生成，所有 wiki 相同；如果未来支持 per-wiki CSS，需要重新评估该比较，否则每个重复 model 都会被判为冲突。
 
-同一 model name 在多处出现但定义完全相同时，不报错。
+同一 model name 在多处出现但定义完全相同时，不报错；`merge_results()` 合并时按 `model_info.name` 去重，只保留第一个 `ExportModel`。保留的 `wiki_info` 仅用于溯源，importer 不读取它。
 
 Note 的 `model_name` 必须存在于导出的 model 集合中。该检查放在 Anki 写入之前，避免出现“model 已创建、note 创建时才失败”的部分写入。
 
