@@ -30,9 +30,7 @@ UI 展示由 `__init__.py` 的 `begin_sync()` 统一完成：
 ```python
 try:
     merged = manager.build_export()
-    model_sources = [em.model_info for em in merged.model_sources]
-    note_sources = [en.note_info for en in merged.note_sources]
-    service.sync_all(model_sources, note_sources)
+    service.sync_all(merged, confirm_deletion=confirmDeletion)
 except TiddlyFlashcardsError as exc:
     showError(ErrorReport(exc.title, exc.summary, exc.details))
     return
