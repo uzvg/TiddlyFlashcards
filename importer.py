@@ -420,7 +420,7 @@ class AnkiNoteRepository:
 
 @dataclass(slots=True)
 class SyncPlan:
-    """一次同步的写入计划：create / update / delete 集合（只读计算产物）。"""
+    """一次同步的写入计划：create / update / delete / status 集合（只读计算产物）。"""
 
     models_to_create: list[ModelSource] = field(default_factory=list)
     models_to_update: list[ModelSource] = field(default_factory=list)
@@ -428,6 +428,8 @@ class SyncPlan:
     notes_to_create: list[NoteSource] = field(default_factory=list)
     notes_to_update: list[NoteSource] = field(default_factory=list)
     notes_to_delete: list[NoteSource] = field(default_factory=list)
+    notes_to_suspend: list[NoteSource] = field(default_factory=list)
+    notes_to_unsuspend: list[NoteSource] = field(default_factory=list)
 
     @property
     def has_deletions(self) -> bool:
@@ -532,6 +534,10 @@ class AnkiSyncer:
             for tf_id in existing_notes.keys() - incoming_notes.keys()
         ]
 
+        notes_to_suspend, notes_to_unsuspend = self._compute_status_changes(
+            existing_notes, incoming_notes
+        )
+
         return SyncPlan(
             models_to_create=models_to_create,
             models_to_update=models_to_update,
@@ -539,7 +545,39 @@ class AnkiSyncer:
             notes_to_create=notes_to_create,
             notes_to_update=notes_to_update,
             notes_to_delete=notes_to_delete,
+            notes_to_suspend=notes_to_suspend,
+            notes_to_unsuspend=notes_to_unsuspend,
         )
+
+    @staticmethod
+    def _compute_status_changes(
+        existing_notes: dict[str, NoteSource],
+        incoming_notes: dict[str, NoteSource],
+    ) -> tuple[list[NoteSource], list[NoteSource]]:
+        """计算需要挂起 / 恢复的 Note。
+
+        新建 note 若目标 status 为 suspend 也需要挂起；
+        已有 note 仅当 status 变化时才同步。
+        """
+        to_suspend: list[NoteSource] = []
+        to_unsuspend: list[NoteSource] = []
+
+        for tf_id in incoming_notes.keys() - existing_notes.keys():
+            source = incoming_notes[tf_id]
+            if source.status == "suspend":
+                to_suspend.append(source)
+
+        for tf_id in incoming_notes.keys() & existing_notes.keys():
+            incoming = incoming_notes[tf_id]
+            existing = existing_notes[tf_id]
+            if incoming.status == existing.status:
+                continue
+            if incoming.status == "suspend":
+                to_suspend.append(incoming)
+            else:
+                to_unsuspend.append(incoming)
+
+        return to_suspend, to_unsuspend
 
     # -- 执行（写） --
 
