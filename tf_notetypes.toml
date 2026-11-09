@@ -153,7 +153,7 @@ front = """
 back = """
 {{Front}}
 
-<hr id=answer>
+<hr id="answer">
 
 {{type:Back}}
 
@@ -207,7 +207,7 @@ front = """
 back = """
 {{FrontSide}}
 
-<hr id=answer>
+<hr id="answer">
 
 {{Back}}
 
@@ -226,7 +226,7 @@ front = """
 back = """
 {{FrontSide}}
 
-<hr id=answer>
+<hr id="answer">
 
 {{Front}}
 
@@ -285,7 +285,7 @@ front = """
 back = """
 {{FrontSide}}
 
-<hr id=answer>
+<hr id="answer">
 
 {{Back}}
 
@@ -304,7 +304,7 @@ front = """
 back = """
 {{FrontSide}}
 
-<hr id=answer>
+<hr id="answer">
 
 {{Front}}
 
