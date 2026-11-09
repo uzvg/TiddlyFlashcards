@@ -455,11 +455,15 @@ class AnkiSyncer:
         """从 WikiExportData 提取 ModelSource / NoteSource 列表。
 
         这是把 wiki 派生信息（WikiSource 的 name / url）折入 note 字段的唯一接缝；
-        目前仅取出 model_info / note_info，未来若需注入 WikiName / WikiUrl 字段
-        只在此处完成（见 docs/import_flow.md 第 2 节）。
+        在此把 WikiName / WikiUrl 注入每个 note 的 fields（见 docs/import_flow.md 第 2 节）。
         """
         models = [em.model_info for em in data.model_sources]
-        notes = [en.note_info for en in data.note_sources]
+        notes: list[NoteSource] = []
+        for en in data.note_sources:
+            note = en.note_info
+            note.fields["WikiName"] = en.wiki_info.name
+            note.fields["WikiUrl"] = en.wiki_info.url
+            notes.append(note)
         return models, notes
 
     def sync_all(
