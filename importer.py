@@ -378,7 +378,7 @@ class AnkiNoteRepository:
 
         status = (
             "suspend"
-            if any(card.queue == QUEUE_TYPE_SUSPENDED for card in cards)
+            if cards and all(card.queue == QUEUE_TYPE_SUSPENDED for card in cards)
             else "unsuspend"
         )
 
