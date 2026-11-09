@@ -629,8 +629,12 @@ class AnkiSyncer:
 
     @staticmethod
     def _notes_equal(a: NoteSource, b: NoteSource) -> bool:
-        """比较两个 NoteSource 是否内容等价（标签按无序集合比较）。"""
-        if a.model_name != b.model_name or a.deck != b.deck or a.status != b.status:
+        """比较两个 NoteSource 是否内容等价（标签按无序集合比较）。
+
+        status 不参与比较：挂起状态由独立的 suspend/unsuspend 动作处理，
+        避免 status 变化触发 update_note 重新生成卡片而干扰挂起同步。
+        """
+        if a.model_name != b.model_name or a.deck != b.deck:
             return False
         if _content_fields(a) != _content_fields(b):
             return False
