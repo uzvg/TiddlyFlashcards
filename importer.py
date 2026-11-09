@@ -614,6 +614,11 @@ class AnkiSyncer:
         model_total: int,
         note_total: int,
     ) -> None:
+        """填充报告统计数据。
+
+        "unchanged" 统计的是字段/标签/牌组/状态四项均未改变的 note；
+        suspend / unsuspend 与 update 可重叠（一个 note 可能同时变更字段与状态）。
+        """
         self.report["models"] = {
             "total": model_total,
             "added": len(plan.models_to_create),
@@ -623,14 +628,21 @@ class AnkiSyncer:
             - len(plan.models_to_update),
             "deleted": len(plan.models_to_delete),
         }
+
+        all_changed_ids = (
+            {s.tf_id for s in plan.notes_to_create}
+            | {s.tf_id for s in plan.notes_to_update}
+            | {s.tf_id for s in plan.notes_to_suspend}
+            | {s.tf_id for s in plan.notes_to_unsuspend}
+        )
         self.report["notes"] = {
             "total": note_total,
             "added": len(plan.notes_to_create),
             "updated": len(plan.notes_to_update),
-            "unchanged": note_total
-            - len(plan.notes_to_create)
-            - len(plan.notes_to_update),
+            "unchanged": note_total - len(all_changed_ids),
             "deleted": len(plan.notes_to_delete),
+            "suspended": len(plan.notes_to_suspend),
+            "unsuspended": len(plan.notes_to_unsuspend),
         }
 
     @staticmethod
@@ -661,7 +673,9 @@ class AnkiSyncer:
             f"added {note_report.get('added', 0)}, "
             f"updated {note_report.get('updated', 0)}, "
             f"unchanged {note_report.get('unchanged', 0)}, "
-            f"deleted {note_report.get('deleted', 0)}"
+            f"deleted {note_report.get('deleted', 0)}, "
+            f"suspended {note_report.get('suspended', 0)}, "
+            f"unsuspended {note_report.get('unsuspended', 0)}"
         )
 
 
