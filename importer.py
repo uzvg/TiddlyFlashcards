@@ -19,6 +19,7 @@ Collection。三层职责划分：
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
+from anki import search_pb2
 from anki.collection import Collection
 from anki.consts import QUEUE_TYPE_SUSPENDED
 from anki.decks import DeckId
@@ -30,15 +31,6 @@ from .models import FieldSource, ModelSource, NoteSource, TemplateSource
 
 # NoteSource.tf_id 在 Anki Note 中存储的字段名。
 TF_ID_FIELD = "TFNoteId"
-
-
-def _escape_search_value(value: str) -> str:
-    """转义用于 Anki 搜索查询的字段值（反斜杠、双引号与冒号）。
-
-    注意：转义顺序很重要，反斜杠必须先于其他字符转义，
-    否则后续转义添加的反斜杠本身也会被错误地再次转义。
-    """
-    return value.replace("\\", "\\\\").replace('"', '\\"').replace(":", "\\:")
 
 
 def _content_fields(source: NoteSource) -> dict[str, str]:
@@ -359,8 +351,15 @@ class AnkiNoteRepository:
         if tf_id in self.tf_id_to_note_id:
             return self.tf_id_to_note_id[tf_id]
 
-        escaped = _escape_search_value(tf_id)
-        matches = self.col.find_notes(f'"{self.tf_id_field}":"{escaped}"')
+        search = self.col.build_search_string(
+            search_pb2.SearchNode(
+                field=search_pb2.SearchNode.Field(
+                    field_name=self.tf_id_field,
+                    text=tf_id,
+                )
+            )
+        )
+        matches = self.col.find_notes(search)
         if not matches:
             return None
         if len(matches) > 1:
