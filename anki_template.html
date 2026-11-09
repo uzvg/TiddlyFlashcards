@@ -1,0 +1,269 @@
+<!-- 1. WikiName
+2. WikiUrl
+3. Source
+4. TFNoteId
+
+#TFNoteId               Source
+Front                   Front
+Back                    Back
+
+-->
+<div class="card">
+  <!-- Front Side -->
+  <div class="tf-card-container">
+    <div class="tf-card-header">
+      <div class="tf-wiki-name">{{WikiName}}</div>
+      <div class="tf-card-id">{{TFNoteId}}</div>
+      <div class="tf-card-source">{{Source}}</div>
+    </div>
+    <div class="tf-fields-container">
+      <label class="tf-field-name"> Front </label>
+      <div class="tf-field-value">{{Front}}</div>
+    </div>
+  </div>
+
+  <!-- Back Side -->
+  <div class="tf-card-container">
+    <div class="tf-card-header">
+      <div class="tf-wiki-name">{{WikiName}}</div>
+      <div class="tf-card-id">{{TFNoteId}}</div>
+      <div class="tf-card-source">{{Source}}</div>
+    </div>
+    <div class="tf-fields-container">
+      <label class="tf-field-name"> Front </label>
+      <div class="tf-field-value">{{Front}}</div>
+
+      <label class="tf-field-name"> Back </label>
+      <div class="tf-field-value">{{Back}}</div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* ==========================================================================
+   TiddlyFlashcards — Anki 卡片样式
+   仅兼容最新版 Anki（2.1.50+ / Qt6），通过 prefers-color-scheme 适配明/暗主题
+   ========================================================================== */
+
+  /* ==========================================================================
+   配色方案：亮色（默认）
+   ========================================================================== */
+
+  :root {
+    /* 强调色：用于边框、光晕、字段名，不用于卡片表面 */
+    --tf-accent: #5778d8;
+
+    /* 卡片表面由两个背景层混合而来（对应 TiddlyWiki 的 background / page-background） */
+    --tf-background: #ffffff;
+    --tf-page-background: #f2f3f5;
+
+    /* 前景 / 文字 */
+    --tf-foreground: #1f2328;
+
+    /* 由基础色派生的设计 token */
+    --tf-surface: color-mix(
+      in oklab,
+      var(--tf-background) 65%,
+      var(--tf-page-background) 35%
+    );
+    --tf-surface-hover: color-mix(
+      in oklab,
+      var(--tf-background) 55%,
+      var(--tf-page-background) 45%
+    );
+    --tf-border: color-mix(in oklab, var(--tf-accent) 30%, transparent);
+    --tf-border-hover: color-mix(in oklab, var(--tf-accent) 65%, transparent);
+    --tf-glow: color-mix(in oklab, var(--tf-accent) 12%, transparent);
+    --tf-glow-hover: color-mix(in oklab, var(--tf-accent) 24%, transparent);
+
+    --tf-transition: 300ms ease;
+  }
+
+  /* ==========================================================================
+   配色方案：暗色
+   ========================================================================== */
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --tf-accent: #8ab4ff;
+      --tf-background: #1e2128;
+      --tf-page-background: #121418;
+      --tf-foreground: #e6edf3;
+    }
+  }
+
+  /* ==========================================================================
+   视口与居中
+   ========================================================================== */
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    box-sizing: border-box;
+    padding: 16px;
+
+    background: var(--tf-page-background);
+    color: var(--tf-foreground);
+
+    font-family:
+      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue",
+      Arial, sans-serif;
+    line-height: 1.5;
+  }
+
+  /* 根容器：作为 flex 子项，用 auto 边距实现水平垂直居中，内容超高时可正常滚动 */
+  .card {
+    margin: auto;
+    width: 100%;
+    max-width: 768px;
+    box-sizing: border-box;
+
+    display: flex;
+    flex-direction: column;
+    gap: 1em;
+  }
+
+  /* ==========================================================================
+   卡片容器
+   ========================================================================== */
+
+  .tf-card-container {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      "header id"
+      "field field";
+    align-items: center;
+
+    width: 100%;
+    padding: 0.5em;
+
+    border: 1px solid var(--tf-border);
+    border-inline-start: 3px solid var(--tf-accent);
+    border-radius: 4px;
+
+    background: var(--tf-surface);
+
+    box-shadow: 0 0 5px var(--tf-glow);
+
+    transition:
+      background-color var(--tf-transition),
+      border-color var(--tf-transition),
+      box-shadow var(--tf-transition);
+  }
+
+  .tf-card-container:hover {
+    background: var(--tf-surface-hover);
+    border-color: var(--tf-border-hover);
+    box-shadow:
+      0 2px 8px var(--tf-glow),
+      0 0 12px var(--tf-glow-hover);
+  }
+
+  /* ==========================================================================
+   卡片头部（标题）
+   ========================================================================== */
+
+  .tf-card-header {
+    grid-area: header;
+
+    display: flex;
+    align-items: center;
+
+    padding-inline: 1em;
+
+    font-family: monospace;
+    font-size: 0.9em;
+    font-weight: 600;
+    letter-spacing: 1px;
+
+    color: var(--tf-foreground);
+  }
+
+  /* ==========================================================================
+   卡片 ID
+   ========================================================================== */
+
+  .tf-card-id {
+    grid-area: id;
+
+    padding-inline-end: 1em;
+
+    font-family: monospace;
+    font-size: 0.8em;
+    letter-spacing: 1px;
+
+    color: color-mix(in oklab, var(--tf-foreground) 50%, transparent);
+
+    transition: color var(--tf-transition);
+  }
+
+  .tf-card-id::before {
+    content: "#";
+  }
+
+  .tf-card-container:hover .tf-card-id {
+    color: color-mix(in oklab, var(--tf-foreground) 80%, transparent);
+  }
+
+  /* ==========================================================================
+   字段容器
+   ========================================================================== */
+
+  .tf-fields-container {
+    grid-area: field;
+
+    display: grid;
+    grid-template-columns: auto 1fr;
+  }
+
+  /* ==========================================================================
+   字段名
+   ========================================================================== */
+
+  .tf-field-name {
+    display: grid;
+    justify-items: end;
+    align-items: center;
+
+    padding-inline: 1em;
+
+    font-family: monospace;
+    font-size: 0.8em;
+    font-weight: 500;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+
+    color: color-mix(in oklab, var(--tf-accent) 60%, transparent);
+
+    border-block-start: 2px dotted
+      color-mix(in oklab, var(--tf-accent) 25%, transparent);
+    border-inline-end: 2px dotted
+      color-mix(in oklab, var(--tf-accent) 25%, transparent);
+
+    transition: color var(--tf-transition);
+  }
+
+  .tf-card-container:hover .tf-field-name {
+    color: var(--tf-accent);
+  }
+
+  /* ==========================================================================
+   字段值
+   ========================================================================== */
+
+  .tf-field-value {
+    display: grid;
+    align-items: center;
+
+    min-width: 0;
+
+    padding-inline: 1em;
+
+    overflow-wrap: break-word;
+
+    border-block-start: 2px dotted
+      color-mix(in oklab, var(--tf-accent) 25%, transparent);
+  }
+</style>
