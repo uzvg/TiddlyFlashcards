@@ -13,7 +13,7 @@ Back                    Back
   <div class="tf-card-container">
     <div class="tf-card-header">
       <div class="tf-card-id">{{TFNoteId}}</div>
-      <div class="tf-card-source">{{WikiName}}/{{Source}}</div>
+      <div class="tf-card-source" data-source="{{Source}}" title="Click to copy Source">{{WikiName}}/{{Source}}</div>
     </div>
     <div class="tf-fields-container">
       <label class="tf-field-name"> Front </label>
@@ -25,7 +25,7 @@ Back                    Back
   <div class="tf-card-container">
     <div class="tf-card-header">
       <div class="tf-card-id">{{TFNoteId}}</div>
-      <div class="tf-card-source">{{WikiName}}/{{Source}}</div>
+      <div class="tf-card-source" data-source="{{Source}}" title="Click to copy Source">{{WikiName}}/{{Source}}</div>
     </div>
     <div class="tf-fields-container">
       <label class="tf-field-name"> Front </label>
@@ -109,6 +109,7 @@ body {
   margin-left: auto;
   opacity: 0;
   transition: opacity 0.2s ease;
+  cursor: pointer;
 }
 
 .tf-card-container:hover .tf-card-source {
@@ -141,3 +142,30 @@ body {
   border-top: 2px dotted var(--tf-divider);
 }
 </style>
+
+<script>
+(function () {
+  function legacyCopy(text) {
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+
+  document.querySelectorAll('.tf-card-source').forEach(function (el) {
+    el.addEventListener('click', function () {
+      var text = el.getAttribute('data-source');
+      if (!text) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).catch(function () { legacyCopy(text); });
+      } else {
+        legacyCopy(text);
+      }
+    });
+  });
+})();
+</script>
