@@ -1,7 +1,7 @@
 {
   "TFBasic": {
-    "model_type": 0,
-    "fields": [
+    "type": 0,
+    "flds": [
       {
         "name": "Front",
         "collapsed": true,
@@ -18,7 +18,7 @@
         "prevent_deletion": true
       }
     ],
-    "templates": [
+    "tmpls": [
       {
         "name": "Card 1",
         "front": "{{Front}}\n",
@@ -27,8 +27,8 @@
     ]
   },
   "TFCloze": {
-    "model_type": 1,
-    "fields": [
+    "type": 1,
+    "flds": [
       {
         "name": "Text",
         "collapsed": true,
@@ -45,7 +45,7 @@
         "prevent_deletion": true
       }
     ],
-    "templates": [
+    "tmpls": [
       {
         "name": "Card 1",
         "front": "{{cloze:Text}}\n",
@@ -54,8 +54,8 @@
     ]
   },
   "TFType": {
-    "model_type": 0,
-    "fields": [
+    "type": 0,
+    "flds": [
       {
         "name": "Front",
         "collapsed": true,
@@ -72,7 +72,7 @@
         "prevent_deletion": true
       }
     ],
-    "templates": [
+    "tmpls": [
       {
         "name": "Card 1",
         "front": "{{Front}}\n\n{{type:Back}}\n",
@@ -81,8 +81,8 @@
     ]
   },
   "TFPair": {
-    "model_type": 0,
-    "fields": [
+    "type": 0,
+    "flds": [
       {
         "name": "Front",
         "collapsed": true,
@@ -99,7 +99,7 @@
         "prevent_deletion": true
       }
     ],
-    "templates": [
+    "tmpls": [
       {
         "name": "Card 1",
         "front": "{{Front}}\n",
@@ -113,8 +113,8 @@
     ]
   },
   "TFOptionalPair": {
-    "model_type": 0,
-    "fields": [
+    "type": 0,
+    "flds": [
       {
         "name": "Front",
         "collapsed": true,
@@ -136,7 +136,7 @@
         "prevent_deletion": true
       }
     ],
-    "templates": [
+    "tmpls": [
       {
         "name": "Card 1",
         "front": "{{Front}}\n",

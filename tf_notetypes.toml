@@ -6,22 +6,22 @@
 [TFBasic]
 type = 0
 
-[[TFBasic.fields]]
+[[TFBasic.flds]]
 name = "Front"
 collapsed = true
 prevent_deletion = true
 
-[[TFBasic.fields]]
+[[TFBasic.flds]]
 name = "Back"
 collapsed = true
 prevent_deletion = true
 
-[[TFBasic.fields]]
+[[TFBasic.flds]]
 name = "TFNoteId"
 collapsed = true
 prevent_deletion = true
 
-[[TFBasic.templates]]
+[[TFBasic.tmpls]]
 name = "Card 1"
 front = """
 {{Front}}
@@ -42,22 +42,22 @@ back = """
 [TFCloze]
 type = 1
 
-[[TFCloze.fields]]
+[[TFCloze.flds]]
 name = "Text"
 collapsed = true
 prevent_deletion = true
 
-[[TFCloze.fields]]
+[[TFCloze.flds]]
 name = "Back Extra"
 collapsed = true
 prevent_deletion = true
 
-[[TFCloze.fields]]
+[[TFCloze.flds]]
 name = "TFNoteId"
 collapsed = true
 prevent_deletion = true
 
-[[TFCloze.templates]]
+[[TFCloze.tmpls]]
 name = "Card 1"
 front = """
 {{cloze:Text}}
@@ -80,22 +80,22 @@ back = """
 [TFType]
 type = 0
 
-[[TFType.fields]]
+[[TFType.flds]]
 name = "Front"
 collapsed = true
 prevent_deletion = true
 
-[[TFType.fields]]
+[[TFType.flds]]
 name = "Back"
 collapsed = true
 prevent_deletion = true
 
-[[TFType.fields]]
+[[TFType.flds]]
 name = "TFNoteId"
 collapsed = true
 prevent_deletion = true
 
-[[TFType.templates]]
+[[TFType.tmpls]]
 name = "Card 1"
 front = """
 {{Front}}
@@ -120,22 +120,22 @@ back = """
 [TFPair]
 type = 0
 
-[[TFPair.fields]]
+[[TFPair.flds]]
 name = "Front"
 collapsed = true
 prevent_deletion = true
 
-[[TFPair.fields]]
+[[TFPair.flds]]
 name = "Back"
 collapsed = true
 prevent_deletion = true
 
-[[TFPair.fields]]
+[[TFPair.flds]]
 name = "TFNoteId"
 collapsed = true
 prevent_deletion = true
 
-[[TFPair.templates]]
+[[TFPair.tmpls]]
 name = "Card 1"
 front = """
 {{Front}}
@@ -154,7 +154,7 @@ back = """
 </div>
 """
 
-[[TFPair.templates]]
+[[TFPair.tmpls]]
 name = "Card 2"
 front = """
 {{Back}}
@@ -177,27 +177,27 @@ back = """
 [TFOptionalPair]
 type = 0
 
-[[TFOptionalPair.fields]]
+[[TFOptionalPair.flds]]
 name = "Front"
 collapsed = true
 prevent_deletion = true
 
-[[TFOptionalPair.fields]]
+[[TFOptionalPair.flds]]
 name = "Back"
 collapsed = true
 prevent_deletion = true
 
-[[TFOptionalPair.fields]]
+[[TFOptionalPair.flds]]
 name = "Add Reverse"
 collapsed = true
 prevent_deletion = true
 
-[[TFOptionalPair.fields]]
+[[TFOptionalPair.flds]]
 name = "TFNoteId"
 collapsed = true
 prevent_deletion = true
 
-[[TFOptionalPair.templates]]
+[[TFOptionalPair.tmpls]]
 name = "Card 1"
 front = """
 {{Front}}
@@ -216,7 +216,7 @@ back = """
 </div>
 """
 
-[[TFOptionalPair.templates]]
+[[TFOptionalPair.tmpls]]
 name = "Card 2"
 front = """
 {{#Add Reverse}}{{Back}}{{/Add Reverse}}
