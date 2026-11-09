@@ -17,6 +17,21 @@
         "name": "TFNoteId",
         "collapsed": true,
         "prevent_deletion": true
+      },
+      {
+        "name": "WikiName",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "WikiUrl",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "Source",
+        "collapsed": true,
+        "prevent_deletion": true
       }
     ],
     "tmpls": [
@@ -43,6 +58,21 @@
       },
       {
         "name": "TFNoteId",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "WikiName",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "WikiUrl",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "Source",
         "collapsed": true,
         "prevent_deletion": true
       }
@@ -73,6 +103,21 @@
         "name": "TFNoteId",
         "collapsed": true,
         "prevent_deletion": true
+      },
+      {
+        "name": "WikiName",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "WikiUrl",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "Source",
+        "collapsed": true,
+        "prevent_deletion": true
       }
     ],
     "tmpls": [
@@ -99,6 +144,21 @@
       },
       {
         "name": "TFNoteId",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "WikiName",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "WikiUrl",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "Source",
         "collapsed": true,
         "prevent_deletion": true
       }
@@ -137,6 +197,21 @@
       },
       {
         "name": "TFNoteId",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "WikiName",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "WikiUrl",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
+      {
+        "name": "Source",
         "collapsed": true,
         "prevent_deletion": true
       }
