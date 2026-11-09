@@ -1,6 +1,7 @@
 {
   "TFBasic": {
     "type": 0,
+    "sortf": 2,
     "flds": [
       {
         "name": "Front",
@@ -28,6 +29,7 @@
   },
   "TFCloze": {
     "type": 1,
+    "sortf": 2,
     "flds": [
       {
         "name": "Text",
@@ -55,6 +57,7 @@
   },
   "TFType": {
     "type": 0,
+    "sortf": 2,
     "flds": [
       {
         "name": "Front",
@@ -82,6 +85,7 @@
   },
   "TFPair": {
     "type": 0,
+    "sortf": 2,
     "flds": [
       {
         "name": "Front",
@@ -114,6 +118,7 @@
   },
   "TFOptionalPair": {
     "type": 0,
+    "sortf": 3,
     "flds": [
       {
         "name": "Front",
