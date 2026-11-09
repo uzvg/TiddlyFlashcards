@@ -33,8 +33,12 @@ TF_ID_FIELD = "TFNoteId"
 
 
 def _escape_search_value(value: str) -> str:
-    """转义用于 Anki 搜索查询的字段值（反斜杠与双引号）。"""
-    return value.replace("\\", "\\\\").replace('"', '\\"')
+    """转义用于 Anki 搜索查询的字段值（反斜杠、双引号与冒号）。
+
+    注意：转义顺序很重要，反斜杠必须先于其他字符转义，
+    否则后续转义添加的反斜杠本身也会被错误地再次转义。
+    """
+    return value.replace("\\", "\\\\").replace('"', '\\"').replace(":", "\\:")
 
 
 def _content_fields(source: NoteSource) -> dict[str, str]:
