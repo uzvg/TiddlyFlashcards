@@ -488,7 +488,7 @@ class AnkiSyncer:
         ):
             return None
 
-        self._execute(plan, note_sources)
+        self._execute(plan)
         self._record_report(plan, len(model_sources), len(note_sources))
         return self._format_report()
 
@@ -581,8 +581,11 @@ class AnkiSyncer:
 
     # -- 执行（写） --
 
-    def _execute(self, plan: SyncPlan, note_sources: list[NoteSource]) -> None:
-        """按固定顺序执行写入：model → note → note 删除 → model 删除。"""
+    def _execute(self, plan: SyncPlan) -> None:
+        """按固定顺序执行写入：model → note → status → note 删除 → model 删除。
+
+        状态同步在 create / update 之后、delete 之前执行，确保所有卡片数据已落盘。
+        """
         for source in plan.models_to_create:
             self.model_repository.create(source)
         for source in plan.models_to_update:
@@ -592,7 +595,10 @@ class AnkiSyncer:
             self.note_repository.create(source)
         for source in plan.notes_to_update:
             self.note_repository.update(source)
-        for source in note_sources:
+
+        for source in plan.notes_to_suspend:
+            self.note_repository.sync_status(source)
+        for source in plan.notes_to_unsuspend:
             self.note_repository.sync_status(source)
 
         for source in plan.notes_to_delete:
