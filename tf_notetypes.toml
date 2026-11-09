@@ -5,7 +5,12 @@
 
 [TFBasic]
 type = 0
-sortf = 2
+sortf = 0
+
+[[TFBasic.flds]]
+name = "TFNoteId"
+collapsed = true
+prevent_deletion = true
 
 [[TFBasic.flds]]
 name = "Front"
@@ -18,7 +23,7 @@ collapsed = true
 prevent_deletion = true
 
 [[TFBasic.flds]]
-name = "TFNoteId"
+name = "Source"
 collapsed = true
 prevent_deletion = true
 
@@ -29,11 +34,6 @@ prevent_deletion = true
 
 [[TFBasic.flds]]
 name = "WikiUrl"
-collapsed = true
-prevent_deletion = true
-
-[[TFBasic.flds]]
-name = "Source"
 collapsed = true
 prevent_deletion = true
 
@@ -57,7 +57,12 @@ back = """
 
 [TFCloze]
 type = 1
-sortf = 2
+sortf = 0
+
+[[TFCloze.flds]]
+name = "TFNoteId"
+collapsed = true
+prevent_deletion = true
 
 [[TFCloze.flds]]
 name = "Text"
@@ -70,7 +75,7 @@ collapsed = true
 prevent_deletion = true
 
 [[TFCloze.flds]]
-name = "TFNoteId"
+name = "Source"
 collapsed = true
 prevent_deletion = true
 
@@ -81,11 +86,6 @@ prevent_deletion = true
 
 [[TFCloze.flds]]
 name = "WikiUrl"
-collapsed = true
-prevent_deletion = true
-
-[[TFCloze.flds]]
-name = "Source"
 collapsed = true
 prevent_deletion = true
 
@@ -111,7 +111,12 @@ back = """
 # TFType 对应 Anki 中的 Basic（type in the answer）
 [TFType]
 type = 0
-sortf = 2
+sortf = 0
+
+[[TFType.flds]]
+name = "TFNoteId"
+collapsed = true
+prevent_deletion = true
 
 [[TFType.flds]]
 name = "Front"
@@ -124,7 +129,7 @@ collapsed = true
 prevent_deletion = true
 
 [[TFType.flds]]
-name = "TFNoteId"
+name = "Source"
 collapsed = true
 prevent_deletion = true
 
@@ -135,11 +140,6 @@ prevent_deletion = true
 
 [[TFType.flds]]
 name = "WikiUrl"
-collapsed = true
-prevent_deletion = true
-
-[[TFType.flds]]
-name = "Source"
 collapsed = true
 prevent_deletion = true
 
@@ -167,7 +167,12 @@ back = """
 # TFPair 对应 Anki 中的 Basic（and Reversed card）
 [TFPair]
 type = 0
-sortf = 2
+sortf = 0
+
+[[TFPair.flds]]
+name = "TFNoteId"
+collapsed = true
+prevent_deletion = true
 
 [[TFPair.flds]]
 name = "Front"
@@ -180,7 +185,7 @@ collapsed = true
 prevent_deletion = true
 
 [[TFPair.flds]]
-name = "TFNoteId"
+name = "Source"
 collapsed = true
 prevent_deletion = true
 
@@ -191,11 +196,6 @@ prevent_deletion = true
 
 [[TFPair.flds]]
 name = "WikiUrl"
-collapsed = true
-prevent_deletion = true
-
-[[TFPair.flds]]
-name = "Source"
 collapsed = true
 prevent_deletion = true
 
@@ -240,7 +240,12 @@ back = """
 # TFOptionalPair 对应 Anki 中的 Basic（Optional Reversed Card）
 [TFOptionalPair]
 type = 0
-sortf = 3
+sortf = 0
+
+[[TFOptionalPair.flds]]
+name = "TFNoteId"
+collapsed = true
+prevent_deletion = true
 
 [[TFOptionalPair.flds]]
 name = "Front"
@@ -258,7 +263,7 @@ collapsed = true
 prevent_deletion = true
 
 [[TFOptionalPair.flds]]
-name = "TFNoteId"
+name = "Source"
 collapsed = true
 prevent_deletion = true
 
@@ -269,11 +274,6 @@ prevent_deletion = true
 
 [[TFOptionalPair.flds]]
 name = "WikiUrl"
-collapsed = true
-prevent_deletion = true
-
-[[TFOptionalPair.flds]]
-name = "Source"
 collapsed = true
 prevent_deletion = true
 

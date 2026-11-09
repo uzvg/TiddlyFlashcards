@@ -1,8 +1,13 @@
 {
   "TFBasic": {
     "type": 0,
-    "sortf": 2,
+    "sortf": 0,
     "flds": [
+      {
+        "name": "TFNoteId",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
       {
         "name": "Front",
         "collapsed": true,
@@ -14,7 +19,7 @@
         "prevent_deletion": true
       },
       {
-        "name": "TFNoteId",
+        "name": "Source",
         "collapsed": true,
         "prevent_deletion": true
       },
@@ -25,11 +30,6 @@
       },
       {
         "name": "WikiUrl",
-        "collapsed": true,
-        "prevent_deletion": true
-      },
-      {
-        "name": "Source",
         "collapsed": true,
         "prevent_deletion": true
       }
@@ -44,8 +44,13 @@
   },
   "TFCloze": {
     "type": 1,
-    "sortf": 2,
+    "sortf": 0,
     "flds": [
+      {
+        "name": "TFNoteId",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
       {
         "name": "Text",
         "collapsed": true,
@@ -57,7 +62,7 @@
         "prevent_deletion": true
       },
       {
-        "name": "TFNoteId",
+        "name": "Source",
         "collapsed": true,
         "prevent_deletion": true
       },
@@ -68,11 +73,6 @@
       },
       {
         "name": "WikiUrl",
-        "collapsed": true,
-        "prevent_deletion": true
-      },
-      {
-        "name": "Source",
         "collapsed": true,
         "prevent_deletion": true
       }
@@ -87,8 +87,13 @@
   },
   "TFType": {
     "type": 0,
-    "sortf": 2,
+    "sortf": 0,
     "flds": [
+      {
+        "name": "TFNoteId",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
       {
         "name": "Front",
         "collapsed": true,
@@ -100,7 +105,7 @@
         "prevent_deletion": true
       },
       {
-        "name": "TFNoteId",
+        "name": "Source",
         "collapsed": true,
         "prevent_deletion": true
       },
@@ -111,11 +116,6 @@
       },
       {
         "name": "WikiUrl",
-        "collapsed": true,
-        "prevent_deletion": true
-      },
-      {
-        "name": "Source",
         "collapsed": true,
         "prevent_deletion": true
       }
@@ -130,8 +130,13 @@
   },
   "TFPair": {
     "type": 0,
-    "sortf": 2,
+    "sortf": 0,
     "flds": [
+      {
+        "name": "TFNoteId",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
       {
         "name": "Front",
         "collapsed": true,
@@ -143,7 +148,7 @@
         "prevent_deletion": true
       },
       {
-        "name": "TFNoteId",
+        "name": "Source",
         "collapsed": true,
         "prevent_deletion": true
       },
@@ -154,11 +159,6 @@
       },
       {
         "name": "WikiUrl",
-        "collapsed": true,
-        "prevent_deletion": true
-      },
-      {
-        "name": "Source",
         "collapsed": true,
         "prevent_deletion": true
       }
@@ -178,8 +178,13 @@
   },
   "TFOptionalPair": {
     "type": 0,
-    "sortf": 3,
+    "sortf": 0,
     "flds": [
+      {
+        "name": "TFNoteId",
+        "collapsed": true,
+        "prevent_deletion": true
+      },
       {
         "name": "Front",
         "collapsed": true,
@@ -196,7 +201,7 @@
         "prevent_deletion": true
       },
       {
-        "name": "TFNoteId",
+        "name": "Source",
         "collapsed": true,
         "prevent_deletion": true
       },
@@ -207,11 +212,6 @@
       },
       {
         "name": "WikiUrl",
-        "collapsed": true,
-        "prevent_deletion": true
-      },
-      {
-        "name": "Source",
         "collapsed": true,
         "prevent_deletion": true
       }
