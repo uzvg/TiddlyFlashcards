@@ -1,0 +1,112 @@
+/* TiddlyFlashcards — Anki 卡片样式
+   通过 prefers-color-scheme 与 Anki night mode（body.nightMode）适配明/暗主题 */
+
+:root {
+  --tf-accent: #5778d8;
+  --tf-bg: #f2f3f5;
+  --tf-card: #ffffff;
+  --tf-text: #1f2328;
+  --tf-border: #e1e4e8;
+  --tf-divider: #5778d840;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --tf-accent: #8ab4ff;
+    --tf-bg: #121418;
+    --tf-card: #1e2128;
+    --tf-text: #e6edf3;
+    --tf-border: #3a3f47;
+    --tf-divider: #8ab4ff40;
+  }
+}
+
+body.nightMode {
+  --tf-accent: #8ab4ff;
+  --tf-bg: #121418;
+  --tf-card: #1e2128;
+  --tf-text: #e6edf3;
+  --tf-border: #3a3f47;
+  --tf-divider: #8ab4ff40;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  box-sizing: border-box;
+  padding: 16px;
+  background: var(--tf-bg);
+  color: var(--tf-text);
+  font-family: system-ui, sans-serif;
+}
+
+.card {
+  margin: auto;
+  width: 100%;
+  max-width: 768px;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
+.tf-card-container {
+  padding: 0.75em 1em;
+  background: var(--tf-card);
+  border: 1px solid var(--tf-border);
+  border-inline-start: 3px solid var(--tf-accent);
+  border-radius: 4px;
+}
+
+.tf-card-header {
+  display: flex;
+  align-items: center;
+  gap: 1em;
+  font-family: monospace;
+  font-size: 0.8em;
+}
+
+.tf-card-id::before {
+  content: "#";
+}
+
+.tf-card-id {
+  opacity: 0.6;
+}
+
+.tf-card-source {
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+}
+
+.tf-card-container:hover .tf-card-source {
+  opacity: 0.6;
+}
+
+.tf-fields-container {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  margin-top: 0.75em;
+}
+
+.tf-field-name {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 0.35em 0.5em 0.35em 0;
+  font-family: monospace;
+  font-size: 0.8em;
+  text-transform: uppercase;
+  color: var(--tf-accent);
+  border-top: 2px dotted var(--tf-divider);
+  border-right: 2px dotted var(--tf-divider);
+}
+
+.tf-field-value {
+  padding: 0.35em 0 0.35em 0.5em;
+  min-width: 0;
+  overflow-wrap: break-word;
+  border-top: 2px dotted var(--tf-divider);
+}
