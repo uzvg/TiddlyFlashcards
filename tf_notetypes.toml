@@ -124,9 +124,10 @@ back = """
   <div class="tf-fields-container">
     <label class="tf-field-name"> Text </label>
     <div class="tf-field-value">{{cloze:Text}}</div>
-
-    <label class="tf-field-name"> Back Extra </label>
-    <div class="tf-field-value">{{Back Extra}}</div>
+    {{#Back Extra}}
+        <label class="tf-field-name"> Back Extra </label>
+        <div class="tf-field-value">{{Back Extra}}</div>
+    {{/Back Extra}}
   </div>
 </div>
 """
