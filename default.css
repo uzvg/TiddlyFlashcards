@@ -123,3 +123,68 @@ body::after {
   overflow-wrap: break-word;
   border-top: 2px dotted var(--tf-divider);
 }
+
+/* ===== 内联代码 ===== */
+code {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.9em;
+  padding: 0.15em 0.4em;
+  background: var(--tf-divider);
+  border-radius: 3px;
+  overflow-wrap: break-word;
+}
+
+/* ===== 代码块 ===== */
+pre {
+  margin: 0.75em 0;
+  padding: 0.75em 1em;
+  background: var(--tf-bg);
+  border: 1px solid var(--tf-border);
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+pre code {
+  display: block;
+  padding: 0;
+  background: none;
+  border-radius: 0;
+  font-size: 0.9em;
+  line-height: 1.5;
+}
+
+/* ===== HTML 表格 ===== */
+table {
+  border-collapse: collapse;
+  margin: 1em 0;
+  max-width: 100%;
+  font-size: 0.9em;
+}
+
+table caption {
+  padding: 0.5em;
+  font-weight: 600;
+  color: var(--tf-accent);
+}
+
+table th,
+table td {
+  padding: 0.5em 0.75em;
+  border: 1px solid var(--tf-border);
+  text-align: left;
+}
+
+table thead th,
+table tfoot td {
+  background: var(--tf-divider);
+  font-weight: 600;
+}
+
+table tbody tr.evenRow,
+table tbody tr:nth-child(even) {
+  background: var(--tf-divider);
+}
+
+table tbody tr.oddRow {
+  background: transparent;
+}
