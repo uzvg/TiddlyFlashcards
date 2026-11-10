@@ -39,7 +39,7 @@ Back                    Back
 
 <style>
 /* TiddlyFlashcards — Anki 卡片样式
-   仅最新版 Anki，通过 prefers-color-scheme 适配明/暗主题 */
+   通过 prefers-color-scheme 与 Anki night mode（body.nightMode）适配明/暗主题 */
 
 :root {
   --tf-accent: #5778d8;
@@ -59,6 +59,15 @@ Back                    Back
     --tf-border: #3a3f47;
     --tf-divider: #8ab4ff40;
   }
+}
+
+body.nightMode {
+  --tf-accent: #8ab4ff;
+  --tf-bg: #121418;
+  --tf-card: #1e2128;
+  --tf-text: #e6edf3;
+  --tf-border: #3a3f47;
+  --tf-divider: #8ab4ff40;
 }
 
 body {
@@ -142,30 +151,3 @@ body {
   border-top: 2px dotted var(--tf-divider);
 }
 </style>
-
-<script>
-(function () {
-  function legacyCopy(text) {
-    var ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.select();
-    document.execCommand('copy');
-    document.body.removeChild(ta);
-  }
-
-  document.querySelectorAll('.tf-card-source').forEach(function (el) {
-    el.addEventListener('click', function () {
-      var text = el.getAttribute('data-source');
-      if (!text) return;
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(text).catch(function () { legacyCopy(text); });
-      } else {
-        legacyCopy(text);
-      }
-    });
-  });
-})();
-</script>
