@@ -444,13 +444,10 @@ class AnkiSyncer:
     不产生任何写。
     """
 
-    def __init__(
-        self,
-        model_repository: AnkiModelRepository,
-        note_repository: AnkiNoteRepository,
-    ) -> None:
-        self.model_repository = model_repository
-        self.note_repository = note_repository
+    def __init__(self, data: WikiExportData, col: Collection) -> None:
+        self.data = data
+        self.model_repository = AnkiModelRepository(col)
+        self.note_repository = AnkiNoteRepository(col, self.model_repository)
         self.report: dict[str, dict[str, int]] = {}
 
     @staticmethod
@@ -473,14 +470,13 @@ class AnkiSyncer:
 
     def sync_all(
         self,
-        data: WikiExportData,
         confirm_deletion: Callable[[SyncPlan], bool] | None = None,
     ) -> str | None:
         """同步入口：提取 → 计划（只读）→ 确认 → 执行。
 
         返回报告文本；用户取消删除时返回 None（不产生任何写）。
         """
-        model_sources, note_sources = self.extract_sources(data)
+        model_sources, note_sources = self.extract_sources(self.data)
         plan = self._compute_plan(model_sources, note_sources)
 
         if plan.has_deletions and (

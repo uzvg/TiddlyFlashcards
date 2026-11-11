@@ -8,7 +8,7 @@ from . import config
 from .config import load_config, open_config_dialog
 from .exceptions import TiddlyFlashcardsError
 from .exporter import WikiExporter, WikiManager
-from .importer import AnkiModelRepository, AnkiNoteRepository, AnkiSyncer
+from .importer import AnkiSyncer
 from .models import compose_model_css
 from .utils import ErrorReport, confirmDeletion, showError, showException
 
@@ -66,12 +66,10 @@ def begin_sync():
         showError(ErrorReport(exc.title, exc.summary, exc.details))
         return
 
-    model_repository = AnkiModelRepository(mw.col)
-    note_repository = AnkiNoteRepository(mw.col, model_repository)
-    service = AnkiSyncer(model_repository, note_repository)
+    service = AnkiSyncer(merged, mw.col)
 
     try:
-        report = service.sync_all(merged, confirm_deletion=confirmDeletion)
+        report = service.sync_all(confirm_deletion=confirmDeletion)
     except (ValueError, RuntimeError) as exc:
         # 写阶段无事务：持久化已完成的部分写，避免集合与磁盘不一致。
         mw.col.save()
