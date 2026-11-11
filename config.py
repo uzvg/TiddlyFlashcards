@@ -65,6 +65,7 @@ class WikiSource:
 class PluginConfig:
     # 用 dataclass 做“内存中的配置模型”。
     tiddlywiki_path: str = ""
+    tiddlywiki_plugin_path: str = ""  # TIDDLYWIKI_PLUGIN_PATH，全局插件目录
 
     wiki_sources: list[WikiSource] = field(default_factory=list)
     custom_css: str = ""
@@ -77,6 +78,7 @@ class PluginConfig:
 
         return cls(
             tiddlywiki_path=_get("tiddlywiki_path"),
+            tiddlywiki_plugin_path=_get("tiddlywiki_plugin_path"),
             wiki_sources=[WikiSource.from_dict(w) for w in _get("wiki_sources")],
             custom_css=_get("custom_css"),
         )
@@ -92,6 +94,7 @@ class PluginConfig:
 DEFAULT_CONFIG: dict = {
     # 落盘到 Anki 配置系统里的 dict 结构。
     "tiddlywiki_path": "",
+    "tiddlywiki_plugin_path": "",
     "wiki_sources": [],
     "custom_css": "",
 }
@@ -350,6 +353,14 @@ class WikisTab(_BaseTab):
         test_btn.clicked.connect(self._on_test)
         layout.addLayout(_field_row("TiddlyWiki Binary", self.bin_edit, test_btn))
 
+        self.plugin_path_edit = QLineEdit(self._cfg.tiddlywiki_plugin_path)
+        self.plugin_path_edit.setPlaceholderText(
+            "e.g. ~/.local/share/tiddlywiki/plugins"
+        )
+        layout.addLayout(
+            _field_row("TiddlyWiki Plugin Path", self.plugin_path_edit)
+        )
+
         self.table = QTableWidget(0, 5)
         self.table.setHorizontalHeaderLabels(["", "Name", "Path", "API URL", "Type"])
         header = self.table.horizontalHeader()
@@ -463,6 +474,7 @@ class WikisTab(_BaseTab):
     # -- public API --
     def apply_to(self, cfg: PluginConfig) -> None:
         cfg.tiddlywiki_path = resolve_tiddlywiki_path(self.bin_edit.text())
+        cfg.tiddlywiki_plugin_path = self.plugin_path_edit.text().strip()
         cfg.wiki_sources = [
             self._row_to_wiki(row) for row in range(self.table.rowCount())
         ]

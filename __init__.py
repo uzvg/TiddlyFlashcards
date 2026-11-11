@@ -53,7 +53,14 @@ def begin_sync():
     css = compose_model_css(cfg)
 
     try:
-        manager = WikiManager(cfg, WikiExporter(cfg.tiddlywiki_path, css=css))
+        manager = WikiManager(
+            cfg,
+            WikiExporter(
+                cfg.tiddlywiki_path,
+                css=css,
+                plugin_path=cfg.tiddlywiki_plugin_path,
+            ),
+        )
         merged = manager.build_export()
     except TiddlyFlashcardsError as exc:
         showError(ErrorReport(exc.title, exc.summary, exc.details))

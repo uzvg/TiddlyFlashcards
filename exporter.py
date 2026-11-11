@@ -9,6 +9,7 @@ Architecture:
     ModelSource / NoteSource —— 结构化产物，分别对应 tf_notetypes / tf_notes 中的一项。
 """
 
+import functools
 import json
 import os
 import shutil
@@ -86,10 +87,12 @@ class WikiExporter:
         tiddlywiki_path: str,
         template: str = RENDER_TEMPLATE,
         css: str = "",
+        plugin_path: str = "",
     ) -> None:
         self.tiddlywiki_path = self._resolve_bin(tiddlywiki_path)
         self.template = template
         self.css = css
+        self.plugin_path = os.path.expanduser(plugin_path.strip())
 
     def export(self, source: WikiSource) -> WikiExportData:
         """导出单个 wiki，渲染结果解析为 WikiExportData。"""
@@ -160,12 +163,18 @@ class WikiExporter:
         os.close(fd)
 
         try:
+            env = None
+            if self.plugin_path:
+                env = os.environ.copy()
+                env["TIDDLYWIKI_PLUGIN_PATH"] = self.plugin_path
+
             subprocess.run(
                 self._build_command(wiki_path, source.type, tmp_path),
                 check=True,
                 capture_output=True,
                 text=True,
                 timeout=EXPORT_TIMEOUT,
+                env=env,
             )
             with open(tmp_path, encoding="utf-8") as file:
                 output = file.read()
