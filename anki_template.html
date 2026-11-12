@@ -37,6 +37,24 @@ Back                    Back
   </div>
 </div>
 
+<!-- Cloze card -->
+
+<div class="tf-card-container">
+  <div class="tf-card-header">
+    <div class="tf-card-id">{{TFNoteId}}</div>
+    <div class="tf-card-source" data-source="{{Source}}" title="Click to copy Source">{{WikiName}}/{{Source}}</div>
+  </div>
+
+  <div class="tf-fields-container">
+    <label class="tf-field-name"> Text </label>
+    <div class="tf-field-value">{{cloze:Text}}</div>
+
+    <label class="tf-field-name"> Back Extra </label>
+    <div class="tf-field-value">{{Back Extra}}</div>
+  </div>
+</div>
+
+
 <style>
 /* TiddlyFlashcards — Anki 卡片样式
    通过 prefers-color-scheme 与 Anki night mode（body.nightMode）适配明/暗主题 */
