@@ -10,12 +10,12 @@
       },
       {
         "name": "Front",
-        "collapsed": true,
+        "collapsed": false,
         "prevent_deletion": true
       },
       {
         "name": "Back",
-        "collapsed": true,
+        "collapsed": false,
         "prevent_deletion": true
       },
       {
@@ -37,8 +37,8 @@
     "tmpls": [
       {
         "name": "Card 1",
-        "front": "{{Front}}\n",
-        "back": "{{FrontSide}}\n<hr id=\"answer\">\n\n{{Back}}\n\n<div class=\"tf-link\">\n    <a href=\"{{WikiUrl}}/tiddler/{{TFNoteId}}\">\n        Open in TiddlyWiki\n    </a>\n</div>\n"
+        "front": "<div class=\"tf-card-container\">\n  <div class=\"tf-card-header\">\n    <div class=\"tf-card-id\">{{TFNoteId}}</div>\n    <div class=\"tf-card-source\" data-source=\"{{Source}}\" title=\"Click to copy Source\">{{WikiName}}/{{Source}}</div>\n  </div>\n  <div class=\"tf-fields-container\">\n    <label class=\"tf-field-name\"> Front </label>\n    <div class=\"tf-field-value\">{{Front}}</div>\n  </div>\n</div>\n",
+        "back": "<div class=\"tf-card-container\">\n  <div class=\"tf-card-header\">\n    <div class=\"tf-card-id\">{{TFNoteId}}</div>\n    <div class=\"tf-card-source\" data-source=\"{{Source}}\" title=\"Click to copy Source\">{{WikiName}}/{{Source}}</div>\n  </div>\n  <div class=\"tf-fields-container\">\n    <label class=\"tf-field-name\"> Front </label>\n    <div class=\"tf-field-value\">{{Front}}</div>\n\n    <label class=\"tf-field-name\"> Back </label>\n    <div class=\"tf-field-value\">{{Back}}</div>\n  </div>\n</div>\n"
       }
     ]
   },
@@ -53,12 +53,12 @@
       },
       {
         "name": "Text",
-        "collapsed": true,
+        "collapsed": false,
         "prevent_deletion": true
       },
       {
         "name": "Back Extra",
-        "collapsed": true,
+        "collapsed": false,
         "prevent_deletion": true
       },
       {
@@ -80,8 +80,8 @@
     "tmpls": [
       {
         "name": "Card 1",
-        "front": "{{cloze:Text}}\n",
-        "back": "{{cloze:Text}}\n\n<br>\n\n{{Back Extra}}\n\n<div class=\"tf-link\">\n    <a href=\"{{WikiUrl}}/tiddler/{{TFNoteId}}\">\n        Open in TiddlyWiki\n    </a>\n</div>\n"
+        "front": "<div class=\"tf-card-container\">\n  <div class=\"tf-card-header\">\n    <div class=\"tf-card-id\">{{TFNoteId}}</div>\n    <div class=\"tf-card-source\" data-source=\"{{Source}}\" title=\"Click to copy Source\">{{WikiName}}/{{Source}}</div>\n  </div>\n  <div class=\"tf-fields-container\">\n    <label class=\"tf-field-name\"> Text </label>\n    <div class=\"tf-field-value\">{{cloze:Text}}</div>\n  </div>\n</div>\n",
+        "back": "<div class=\"tf-card-container\">\n  <div class=\"tf-card-header\">\n    <div class=\"tf-card-id\">{{TFNoteId}}</div>\n    <div class=\"tf-card-source\" data-source=\"{{Source}}\" title=\"Click to copy Source\">{{WikiName}}/{{Source}}</div>\n  </div>\n  <div class=\"tf-fields-container\">\n    <label class=\"tf-field-name\"> Text </label>\n    <div class=\"tf-field-value\">{{cloze:Text}}</div>\n    {{#Back Extra}}\n        <label class=\"tf-field-name\"> Back Extra </label>\n        <div class=\"tf-field-value\">{{Back Extra}}</div>\n    {{/Back Extra}}\n  </div>\n</div>\n"
       }
     ]
   },
@@ -96,12 +96,12 @@
       },
       {
         "name": "Front",
-        "collapsed": true,
+        "collapsed": false,
         "prevent_deletion": true
       },
       {
         "name": "Back",
-        "collapsed": true,
+        "collapsed": false,
         "prevent_deletion": true
       },
       {
@@ -123,8 +123,8 @@
     "tmpls": [
       {
         "name": "Card 1",
-        "front": "{{Front}}\n\n{{type:Back}}\n",
-        "back": "{{Front}}\n\n<hr id=\"answer\">\n\n{{type:Back}}\n\n<div class=\"tf-link\">\n    <a href=\"{{WikiUrl}}/tiddler/{{TFNoteId}}\">\n        Open in TiddlyWiki\n    </a>\n</div>\n"
+        "front": "<div class=\"tf-card-container\">\n  <div class=\"tf-card-header\">\n    <div class=\"tf-card-id\">{{TFNoteId}}</div>\n    <div class=\"tf-card-source\" data-source=\"{{Source}}\" title=\"Click to copy Source\">{{WikiName}}/{{Source}}</div>\n  </div>\n  <div class=\"tf-fields-container\">\n    <label class=\"tf-field-name\"> Front </label>\n    <div class=\"tf-field-value\">{{Front}}</div>\n\n    <label class=\"tf-field-name\"> Back </label>\n    <div class=\"tf-field-value\">{{type:Back}}</div>\n  </div>\n</div>\n",
+        "back": "<div class=\"tf-card-container\">\n  <div class=\"tf-card-header\">\n    <div class=\"tf-card-id\">{{TFNoteId}}</div>\n    <div class=\"tf-card-source\" data-source=\"{{Source}}\" title=\"Click to copy Source\">{{WikiName}}/{{Source}}</div>\n  </div>\n  <div class=\"tf-fields-container\">\n    <label class=\"tf-field-name\"> Front </label>\n    <div class=\"tf-field-value\">{{Front}}</div>\n\n    <label class=\"tf-field-name\"> Back </label>\n    <div class=\"tf-field-value\">{{type:Back}}</div>\n  </div>\n</div>\n"
       }
     ]
   },
@@ -139,12 +139,12 @@
       },
       {
         "name": "Front",
-        "collapsed": true,
+        "collapsed": false,
         "prevent_deletion": true
       },
       {
         "name": "Back",
-        "collapsed": true,
+        "collapsed": false,
         "prevent_deletion": true
       },
       {
@@ -166,13 +166,13 @@
     "tmpls": [
       {
         "name": "Card 1",
-        "front": "{{Front}}\n",
-        "back": "{{FrontSide}}\n\n<hr id=\"answer\">\n\n{{Back}}\n\n<div class=\"tf-link\">\n    <a href=\"{{WikiUrl}}/tiddler/{{TFNoteId}}\">\n        Open in TiddlyWiki\n    </a>\n</div>\n"
+        "front": "<div class=\"tf-card-container\">\n  <div class=\"tf-card-header\">\n    <div class=\"tf-card-id\">{{TFNoteId}}</div>\n    <div class=\"tf-card-source\" data-source=\"{{Source}}\" title=\"Click to copy Source\">{{WikiName}}/{{Source}}</div>\n  </div>\n  <div class=\"tf-fields-container\">\n    <label class=\"tf-field-name\"> Front </label>\n    <div class=\"tf-field-value\">{{Front}}</div>\n  </div>\n</div>\n",
+        "back": "<div class=\"tf-card-container\">\n  <div class=\"tf-card-header\">\n    <div class=\"tf-card-id\">{{TFNoteId}}</div>\n    <div class=\"tf-card-source\" data-source=\"{{Source}}\" title=\"Click to copy Source\">{{WikiName}}/{{Source}}</div>\n  </div>\n  <div class=\"tf-fields-container\">\n    <label class=\"tf-field-name\"> Front </label>\n    <div class=\"tf-field-value\">{{Front}}</div>\n\n    <label class=\"tf-field-name\"> Back </label>\n    <div class=\"tf-field-value\">{{Back}}</div>\n  </div>\n</div>\n"
       },
       {
         "name": "Card 2",
-        "front": "{{Back}}\n",
-        "back": "{{FrontSide}}\n\n<hr id=\"answer\">\n\n{{Front}}\n\n<div class=\"tf-link\">\n    <a href=\"{{WikiUrl}}/tiddler/{{TFNoteId}}\">\n        Open in TiddlyWiki\n    </a>\n</div>\n"
+        "front": "<div class=\"tf-card-container\">\n  <div class=\"tf-card-header\">\n    <div class=\"tf-card-id\">{{TFNoteId}}</div>\n    <div class=\"tf-card-source\" data-source=\"{{Source}}\" title=\"Click to copy Source\">{{WikiName}}/{{Source}}</div>\n  </div>\n  <div class=\"tf-fields-container\">\n    <label class=\"tf-field-name\"> Back </label>\n    <div class=\"tf-field-value\">{{Back}}</div>\n  </div>\n</div>\n",
+        "back": "<div class=\"tf-card-container\">\n  <div class=\"tf-card-header\">\n    <div class=\"tf-card-id\">{{TFNoteId}}</div>\n    <div class=\"tf-card-source\" data-source=\"{{Source}}\" title=\"Click to copy Source\">{{WikiName}}/{{Source}}</div>\n  </div>\n  <div class=\"tf-fields-container\">\n    <label class=\"tf-field-name\"> Back </label>\n    <div class=\"tf-field-value\">{{Back}}</div>\n\n    <label class=\"tf-field-name\"> Front </label>\n    <div class=\"tf-field-value\">{{Front}}</div>\n  </div>\n</div>\n"
       }
     ]
   },
@@ -187,12 +187,12 @@
       },
       {
         "name": "Front",
-        "collapsed": true,
+        "collapsed": false,
         "prevent_deletion": true
       },
       {
         "name": "Back",
-        "collapsed": true,
+        "collapsed": false,
         "prevent_deletion": true
       },
       {
@@ -219,13 +219,13 @@
     "tmpls": [
       {
         "name": "Card 1",
-        "front": "{{Front}}\n",
-        "back": "{{FrontSide}}\n\n<hr id=\"answer\">\n\n{{Back}}\n\n<div class=\"tf-link\">\n    <a href=\"{{WikiUrl}}/tiddler/{{TFNoteId}}\">\n        Open in TiddlyWiki\n    </a>\n</div>\n"
+        "front": "<div class=\"tf-card-container\">\n  <div class=\"tf-card-header\">\n    <div class=\"tf-card-id\">{{TFNoteId}}</div>\n    <div class=\"tf-card-source\" data-source=\"{{Source}}\" title=\"Click to copy Source\">{{WikiName}}/{{Source}}</div>\n  </div>\n  <div class=\"tf-fields-container\">\n    <label class=\"tf-field-name\"> Front </label>\n    <div class=\"tf-field-value\">{{Front}}</div>\n  </div>\n</div>\n",
+        "back": "<div class=\"tf-card-container\">\n  <div class=\"tf-card-header\">\n    <div class=\"tf-card-id\">{{TFNoteId}}</div>\n    <div class=\"tf-card-source\" data-source=\"{{Source}}\" title=\"Click to copy Source\">{{WikiName}}/{{Source}}</div>\n  </div>\n  <div class=\"tf-fields-container\">\n    <label class=\"tf-field-name\"> Front </label>\n    <div class=\"tf-field-value\">{{Front}}</div>\n\n    <label class=\"tf-field-name\"> Back </label>\n    <div class=\"tf-field-value\">{{Back}}</div>\n  </div>\n</div>\n"
       },
       {
         "name": "Card 2",
-        "front": "{{#Add Reverse}}{{Back}}{{/Add Reverse}}\n",
-        "back": "{{FrontSide}}\n\n<hr id=\"answer\">\n\n{{Front}}\n\n<div class=\"tf-link\">\n    <a href=\"{{WikiUrl}}/tiddler/{{TFNoteId}}\">\n        Open in TiddlyWiki\n    </a>\n</div>\n"
+        "front": "<div class=\"tf-card-container\">\n  <div class=\"tf-card-header\">\n    <div class=\"tf-card-id\">{{TFNoteId}}</div>\n    <div class=\"tf-card-source\" data-source=\"{{Source}}\" title=\"Click to copy Source\">{{WikiName}}/{{Source}}</div>\n  </div>\n  <div class=\"tf-fields-container\">\n    <label class=\"tf-field-name\"> Back </label>\n    <div class=\"tf-field-value\">{{#Add Reverse}}{{Back}}{{/Add Reverse}}</div>\n  </div>\n</div>\n",
+        "back": "<div class=\"tf-card-container\">\n  <div class=\"tf-card-header\">\n    <div class=\"tf-card-id\">{{TFNoteId}}</div>\n    <div class=\"tf-card-source\" data-source=\"{{Source}}\" title=\"Click to copy Source\">{{WikiName}}/{{Source}}</div>\n  </div>\n  <div class=\"tf-fields-container\">\n    <label class=\"tf-field-name\"> Back </label>\n    <div class=\"tf-field-value\">{{#Add Reverse}}{{Back}}{{/Add Reverse}}</div>\n\n    <label class=\"tf-field-name\"> Front </label>\n    <div class=\"tf-field-value\">{{Front}}</div>\n  </div>\n</div>\n"
       }
     ]
   }
