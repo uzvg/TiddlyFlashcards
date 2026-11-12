@@ -471,10 +471,11 @@ class AnkiSyncer:
     def sync_all(
         self,
         confirm_deletion: Callable[[SyncPlan], bool] | None = None,
-    ) -> str | None:
+    ) -> dict[str, dict[str, int]] | None:
         """同步入口：提取 → 计划（只读）→ 确认 → 执行。
 
-        返回报告文本；用户取消删除时返回 None（不产生任何写）。
+        返回结构化报告（models / notes 的各类计数）；
+        用户取消删除时返回 None（不产生任何写）。
         """
         model_sources, note_sources = self.extract_sources(self.data)
         plan = self._compute_plan(model_sources, note_sources)
@@ -486,7 +487,7 @@ class AnkiSyncer:
 
         self._execute(plan)
         self._record_report(plan, len(model_sources), len(note_sources))
-        return self._format_report()
+        return self.report
 
     # -- 计划（只读） --
 
@@ -654,25 +655,6 @@ class AnkiSyncer:
             return False
         return sorted(a.tags) == sorted(b.tags)
 
-    def _format_report(self) -> str:
-        """将统计信息格式化为可读文本。"""
-        model_report = self.report.get("models", {})
-        note_report = self.report.get("notes", {})
-        return (
-            "TiddlyFlashcards Sync Summary:\n"
-            f"Models    - total {model_report.get('total', 0)}, "
-            f"added {model_report.get('added', 0)}, "
-            f"updated {model_report.get('updated', 0)}, "
-            f"unchanged {model_report.get('unchanged', 0)}, "
-            f"deleted {model_report.get('deleted', 0)}\n"
-            f"Notes     - total {note_report.get('total', 0)}, "
-            f"added {note_report.get('added', 0)}, "
-            f"updated {note_report.get('updated', 0)}, "
-            f"unchanged {note_report.get('unchanged', 0)}, "
-            f"deleted {note_report.get('deleted', 0)}, "
-            f"suspended {note_report.get('suspended', 0)}, "
-            f"unsuspended {note_report.get('unsuspended', 0)}"
-        )
 
 
 __all__ = [

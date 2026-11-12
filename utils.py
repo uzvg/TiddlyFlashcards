@@ -21,14 +21,20 @@ from dataclasses import dataclass
 from aqt import mw
 from aqt.errors import addon_debug_info
 from aqt.qt import (
+    QAbstractItemView,
     QApplication,
+    QBrush,
+    QColor,
     QDialog,
     QDialogButtonBox,
+    QHeaderView,
     QHBoxLayout,
     QLabel,
     QPlainTextEdit,
     QPushButton,
     QStyle,
+    QTableWidget,
+    QTableWidgetItem,
     Qt,
     QVBoxLayout,
     QWidget,
@@ -246,3 +252,132 @@ def confirmDeletion(plan: SyncPlan, parent: QWidget | None = None) -> bool:
     lines += ["", "Deletion is permanent and cannot be undone. Continue?"]
 
     return askUser("\n".join(lines), parent=parent or mw, defaultno=True)
+
+
+class ReportDialog(QDialog):
+    """同步完成后的结构化报告：以表格展示 models / notes 的各类操作计数。"""
+
+    # (行标题, report 键, 强调色)
+    _ROWS: list[tuple[str, str, str]] = [
+        ("Added", "added", "#1a7f37"),
+        ("Updated", "updated", "#b26a00"),
+        ("Unchanged", "unchanged", "#5f6368"),
+        ("Suspended", "suspended", "#e8710a"),
+        ("Unsuspended", "unsuspended", "#007c91"),
+        ("Deleted", "deleted", "#c5221f"),
+        ("Total", "total", "#202124"),
+    ]
+
+    _MUTED = "#bdc1c6"
+
+    def __init__(
+        self, report: dict[str, dict[str, int]], parent: QWidget | None = None
+    ) -> None:
+        super().__init__(parent)
+        self.report = report
+
+        self.setWindowTitle(WINDOW_TITLE)
+        self.setModal(True)
+        self.setMinimumWidth(400)
+        disable_help_button(self)
+        self._build_ui()
+        self.adjustSize()
+
+    def _build_ui(self) -> None:
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(20, 20, 20, 16)
+        layout.setSpacing(12)
+
+        title = QLabel("Sync Complete", self)
+        title_font = title.font()
+        title_font.setBold(True)
+        title_font.setPointSizeF(title_font.pointSizeF() * 1.3)
+        title.setFont(title_font)
+        layout.addWidget(title)
+
+        subtitle = QLabel("TiddlyFlashcards updated your Anki collection:", self)
+        subtitle.setWordWrap(True)
+        subtitle.setStyleSheet("color: #5f6368;")
+        layout.addWidget(subtitle)
+
+        layout.addWidget(self._build_table())
+
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close, self)
+        qconnect(buttons.rejected, self.reject)
+        layout.addWidget(buttons)
+
+    def _build_table(self) -> QTableWidget:
+        models = self.report.get("models", {})
+        notes = self.report.get("notes", {})
+
+        table = QTableWidget(len(self._ROWS), 3, self)
+        table.setHorizontalHeaderLabels(["", "Models", "Notes"])
+        table.verticalHeader().setVisible(False)
+        table.setShowGrid(False)
+        table.setAlternatingRowColors(True)
+        table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+        table.setSelectionMode(QAbstractItemView.SelectionMode.NoSelection)
+        table.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+        table.verticalHeader().setDefaultSectionSize(28)
+
+        header = table.horizontalHeader()
+        header.setSectionResizeMode(0, QHeaderView.ResizeMode.ResizeToContents)
+        header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        header.setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
+
+        center = Qt.AlignmentFlag.AlignCenter
+
+        for row, (label, key, color) in enumerate(self._ROWS):
+            is_total = key == "total"
+            table.setItem(row, 0, self._item(label, color=color, bold=True))
+
+            model_text = str(models.get(key)) if key in models else "\u2014"
+            note_text = str(notes.get(key)) if key in notes else "\u2014"
+            table.setItem(
+                row,
+                1,
+                self._item(
+                    model_text,
+                    color=color if (is_total or models.get(key, 0)) else self._MUTED,
+                    bold=is_total,
+                    align=center,
+                ),
+            )
+            table.setItem(
+                row,
+                2,
+                self._item(
+                    note_text,
+                    color=color if (is_total or notes.get(key, 0)) else self._MUTED,
+                    bold=is_total,
+                    align=center,
+                ),
+            )
+
+        return table
+
+    @staticmethod
+    def _item(
+        text: str,
+        *,
+        color: str,
+        bold: bool = False,
+        align: Qt.AlignmentFlag = Qt.AlignmentFlag.AlignLeft
+        | Qt.AlignmentFlag.AlignVCenter,
+    ) -> QTableWidgetItem:
+        item = QTableWidgetItem(text)
+        item.setTextAlignment(align)
+        item.setFlags(Qt.ItemFlag.ItemIsEnabled)
+        font = item.font()
+        font.setBold(bold)
+        item.setFont(font)
+        item.setForeground(QBrush(QColor(color)))
+        return item
+
+
+def showReport(
+    report: dict[str, dict[str, int]],
+    parent: QWidget | None = None,
+) -> None:
+    """模态显示结构化同步报告。"""
+    ReportDialog(report, parent=parent or mw).exec()

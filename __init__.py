@@ -2,7 +2,6 @@ import importlib
 
 from aqt import mw
 from aqt.qt import QAction
-from aqt.utils import showInfo
 
 from . import config
 from .config import load_config, open_config_dialog
@@ -10,7 +9,13 @@ from .exceptions import TiddlyFlashcardsError
 from .exporter import WikiExporter, WikiManager
 from .importer import AnkiSyncer
 from .models import compose_model_css
-from .utils import ErrorReport, confirmDeletion, showError, showException
+from .utils import (
+    ErrorReport,
+    confirmDeletion,
+    showError,
+    showException,
+    showReport,
+)
 
 
 def reload_config_dialog():
@@ -86,7 +91,7 @@ def begin_sync():
         # 用户取消删除：本次同步未做任何写入。
         return
 
-    showInfo(report)
+    showReport(report)
     mw.col.save()
     mw.reset()
 
