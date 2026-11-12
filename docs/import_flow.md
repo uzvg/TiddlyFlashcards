@@ -16,7 +16,7 @@ importer 不关心数据从哪里来，只消费干净的结构化输入。三�
 
 ## 2. 输入契约
 
-`AnkiSyncer` 直接接受 `build_export()` 返回的 `WikiExportData`，并通过内部提取函数 `extract_sources()` 把它提取为 `ModelSource` / `NoteSource` 列表：
+`AnkiSyncer` 在构造时直接接受 `build_export()` 返回的 `WikiExportData`，并通过内部提取函数 `extract_sources()` 把它提取为 `ModelSource` / `NoteSource` 列表：
 
 - 同名 model 已在导出阶段去重并保留第一个，此处仅从每个 `ExportModel` 取出 `model_info`。
 - note 从每个 `ExportNote` 取出 `note_info`。
@@ -52,7 +52,7 @@ importer 信任这份契约，不再重复校验；校验集中在上游导出�
 
 ## 5. 同步阶段
 
-一次同步分三步，且**先计划、后确认、再执行**，保证删除确认发生在任何写操作之前。入口 `sync_all(data: WikiExportData)` 先调用 `extract_sources()` 提取出 `ModelSource` / `NoteSource`，再进入下面的计划 / 确认 / 执行。
+一次同步分三步，且**先计划、后确认、再执行**，保证删除确认发生在任何写操作之前。`AnkiSyncer` 在构造时接收 `WikiExportData`；入口 `sync_all()` 先调用 `extract_sources(self.data)` 提取出 `ModelSource` / `NoteSource`，再进入下面的计划 / 确认 / 执行。
 
 ### 5.1 计算计划（只读，不写）
 

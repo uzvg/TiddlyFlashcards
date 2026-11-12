@@ -30,7 +30,8 @@ UI 展示由 `__init__.py` 的 `begin_sync()` 统一完成：
 ```python
 try:
     merged = manager.build_export()
-    service.sync_all(merged, confirm_deletion=confirmDeletion)
+    service = AnkiSyncer(merged, mw.col)
+    service.sync_all(confirm_deletion=confirmDeletion)
 except TiddlyFlashcardsError as exc:
     showError(ErrorReport(exc.title, exc.summary, exc.details))
     return
