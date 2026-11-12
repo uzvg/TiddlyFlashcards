@@ -18,40 +18,6 @@ from .utils import (
 )
 
 
-def reload_config_dialog():
-    importlib.reload(config)
-    open_config_dialog()
-
-
-def show_sync_error_demo():
-    # 演示错误对话框：标题常驻、详情折叠、可一键复制完整报告。
-    try:
-        raise RuntimeError("Failed to write note 'demo-note-1' to the collection.")
-    except RuntimeError as exc:
-        report = ErrorReport.from_exception(
-            exc,
-            title="Sync aborted: could not write note",
-            summary=(
-                "TiddlyFlashcards stopped before making further changes. "
-                "Existing cards were left untouched."
-            ),
-            details=(
-                "Wiki: Example wiki (folder)\n"
-                "Notetype: TiddlyFlashcards Basic\n"
-                "TFNoteId: demo-note-1\n"
-                "Deck: Default\n\n"
-                "Backend output:\n"
-                "  writing fields ... ok\n"
-                "  writing tags ... ok\n"
-                "  writing cards ... failed\n\n"
-                "This is sample text used to demonstrate a long error report. "
-                "Click 'Show Details' to expand it, or 'Copy Debug Info' to "
-                "copy the full report together with the Anki environment info."
-            ),
-        )
-    showError(report)
-
-
 def begin_sync():
     assert mw.col is not None
     cfg = load_config()
@@ -103,15 +69,3 @@ sync_cards_action = QAction("TiddlyFlashcards Sync", mw)
 sync_cards_action.setShortcut("Alt+S")
 sync_cards_action.triggered.connect(begin_sync)
 mw.form.menuTools.addAction(sync_cards_action)
-
-# Show the error report dialog with sample data (for debugging the dialog)
-show_error_dialog_action = QAction(
-    "TiddlyFlashcards Show Error Dialog(For Debugging)", mw
-)
-show_error_dialog_action.triggered.connect(show_sync_error_demo)
-mw.form.menuTools.addAction(show_error_dialog_action)
-
-# Reload config diaglog config
-reload_config_dialog_action = QAction("Reload Config Dialg(For Debugging)", mw)
-reload_config_dialog_action.triggered.connect(reload_config_dialog)
-mw.form.menuTools.addAction(reload_config_dialog_action)
