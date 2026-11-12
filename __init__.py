@@ -99,7 +99,8 @@ def begin_sync():
 # Register config action (called once when the add-on loads)
 mw.addonManager.setConfigAction(__name__, open_config_dialog)
 
-sync_cards_action = QAction("TiddlyFlashcards Sync Cards", mw)
+sync_cards_action = QAction("TiddlyFlashcards Sync", mw)
+sync_cards_action.setShortcut("Alt+S")
 sync_cards_action.triggered.connect(begin_sync)
 mw.form.menuTools.addAction(sync_cards_action)
 
