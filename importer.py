@@ -18,6 +18,7 @@ Collection。三层职责划分：
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from typing import TypeVar
 
 from anki import search_pb2
 from anki.collection import Collection
@@ -36,6 +37,23 @@ TF_ID_FIELD = "TFNoteId"
 def _content_fields(source: NoteSource) -> dict[str, str]:
     """返回不含身份字段 TFNoteId 的内容字段。"""
     return {k: v for k, v in source.fields.items() if k != TF_ID_FIELD}
+
+
+_T = TypeVar("_T")
+
+
+def _partition_keys(
+    incoming: dict[str, _T],
+    existing: dict[str, _T],
+) -> tuple[set[str], set[str], set[str]]:
+    """将两个字典的键划分为 (新增, 共有, 删除) 三组。"""
+    incoming_keys = incoming.keys()
+    existing_keys = existing.keys()
+    return (
+        incoming_keys - existing_keys,
+        incoming_keys & existing_keys,
+        existing_keys - incoming_keys,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -322,12 +340,22 @@ class AnkiNoteRepository:
         self.col.remove_notes([note_id])
         self.tf_id_to_note_id.pop(tf_id, None)
 
-    def sync_status(self, source: NoteSource) -> None:
-        """根据 `status` 挂起或恢复该 Note 的所有关联 Cards。
+    def suspend(self, tf_id: str) -> None:
+        """挂起该 Note 的所有关联 Cards。Note 不存在时安全返回。"""
+        self._set_suspended(tf_id, True)
 
-        Note 不存在时安全返回，不会操作其他 Note。
+    def unsuspend(self, tf_id: str) -> None:
+        """恢复该 Note 的所有关联 Cards。Note 不存在时安全返回。"""
+        self._set_suspended(tf_id, False)
+
+    # -- 内部辅助 --
+
+    def _set_suspended(self, tf_id: str, suspended: bool) -> None:
+        """按目标状态挂起/恢复该 Note 的所有关联 Cards。
+
+        Note 不存在或无关联 Cards 时安全返回。
         """
-        note_id = self._find_note_id(source.tf_id)
+        note_id = self._find_note_id(tf_id)
         if note_id is None:
             return
 
@@ -335,12 +363,10 @@ class AnkiNoteRepository:
         if not card_ids:
             return
 
-        if source.status == "suspend":
+        if suspended:
             self.col.sched.suspend_cards(card_ids)
         else:
             self.col.sched.unsuspend_cards(card_ids)
-
-    # -- 内部辅助 --
 
     def _field_names(self, notetype: NotetypeDict) -> list[str]:
         """返回目标 Notetype 的全部字段名。"""
@@ -496,85 +522,50 @@ class AnkiSyncer:
         model_sources: list[ModelSource],
         note_sources: list[NoteSource],
     ) -> SyncPlan:
-        """计算 create / update / delete 集合，不产生任何写。"""
+        """计算 create / update / delete / status 集合，不产生任何写。"""
         existing_models = {m.name: m for m in self.model_repository.get_all()}
         incoming_models = {m.name: m for m in model_sources}
-
-        models_to_create = [
-            incoming_models[name]
-            for name in incoming_models.keys() - existing_models.keys()
-        ]
-        models_to_update = [
-            incoming_models[name]
-            for name in incoming_models.keys() & existing_models.keys()
-            if existing_models[name] != incoming_models[name]
-        ]
-        models_to_delete = [
-            existing_models[name]
-            for name in existing_models.keys() - incoming_models.keys()
-        ]
+        models_new, models_common, models_deleted = _partition_keys(
+            incoming_models, existing_models
+        )
 
         existing_notes = {n.tf_id: n for n in self.note_repository.get_all()}
         incoming_notes = {n.tf_id: n for n in note_sources}
-
-        notes_to_create = [
-            incoming_notes[tf_id]
-            for tf_id in incoming_notes.keys() - existing_notes.keys()
-        ]
-        notes_to_update = [
-            incoming_notes[tf_id]
-            for tf_id in incoming_notes.keys() & existing_notes.keys()
-            if not self._notes_equal(existing_notes[tf_id], incoming_notes[tf_id])
-        ]
-        notes_to_delete = [
-            existing_notes[tf_id]
-            for tf_id in existing_notes.keys() - incoming_notes.keys()
-        ]
-
-        notes_to_suspend, notes_to_unsuspend = self._compute_status_changes(
-            existing_notes, incoming_notes
+        notes_new, notes_common, notes_deleted = _partition_keys(
+            incoming_notes, existing_notes
         )
+        status_changed = {
+            tf_id
+            for tf_id in notes_common
+            if incoming_notes[tf_id].status != existing_notes[tf_id].status
+        }
 
         return SyncPlan(
-            models_to_create=models_to_create,
-            models_to_update=models_to_update,
-            models_to_delete=models_to_delete,
-            notes_to_create=notes_to_create,
-            notes_to_update=notes_to_update,
-            notes_to_delete=notes_to_delete,
-            notes_to_suspend=notes_to_suspend,
-            notes_to_unsuspend=notes_to_unsuspend,
+            models_to_create=[incoming_models[name] for name in models_new],
+            models_to_update=[
+                incoming_models[name]
+                for name in models_common
+                if existing_models[name] != incoming_models[name]
+            ],
+            models_to_delete=[existing_models[name] for name in models_deleted],
+            notes_to_create=[incoming_notes[tf_id] for tf_id in notes_new],
+            notes_to_update=[
+                incoming_notes[tf_id]
+                for tf_id in notes_common
+                if not self._notes_equal(existing_notes[tf_id], incoming_notes[tf_id])
+            ],
+            notes_to_delete=[existing_notes[tf_id] for tf_id in notes_deleted],
+            notes_to_suspend=[
+                incoming_notes[tf_id]
+                for tf_id in notes_new | status_changed
+                if incoming_notes[tf_id].status == "suspend"
+            ],
+            notes_to_unsuspend=[
+                incoming_notes[tf_id]
+                for tf_id in status_changed
+                if incoming_notes[tf_id].status != "suspend"
+            ],
         )
-
-    @staticmethod
-    def _compute_status_changes(
-        existing_notes: dict[str, NoteSource],
-        incoming_notes: dict[str, NoteSource],
-    ) -> tuple[list[NoteSource], list[NoteSource]]:
-        """计算需要挂起 / 恢复的 Note。
-
-        新建 note 若目标 status 为 suspend 也需要挂起；
-        已有 note 仅当 status 变化时才同步。
-        """
-        to_suspend: list[NoteSource] = []
-        to_unsuspend: list[NoteSource] = []
-
-        for tf_id in incoming_notes.keys() - existing_notes.keys():
-            source = incoming_notes[tf_id]
-            if source.status == "suspend":
-                to_suspend.append(source)
-
-        for tf_id in incoming_notes.keys() & existing_notes.keys():
-            incoming = incoming_notes[tf_id]
-            existing = existing_notes[tf_id]
-            if incoming.status == existing.status:
-                continue
-            if incoming.status == "suspend":
-                to_suspend.append(incoming)
-            else:
-                to_unsuspend.append(incoming)
-
-        return to_suspend, to_unsuspend
 
     # -- 执行（写） --
 
@@ -594,9 +585,9 @@ class AnkiSyncer:
             self.note_repository.update(source)
 
         for source in plan.notes_to_suspend:
-            self.note_repository.sync_status(source)
+            self.note_repository.suspend(source.tf_id)
         for source in plan.notes_to_unsuspend:
-            self.note_repository.sync_status(source)
+            self.note_repository.unsuspend(source.tf_id)
 
         for source in plan.notes_to_delete:
             self.note_repository.delete(source.tf_id)
