@@ -9,7 +9,6 @@ Architecture:
     ModelSource / NoteSource —— 结构化产物，分别对应 tf_notetypes / tf_notes 中的一项。
 """
 
-import functools
 import json
 import os
 import shutil
