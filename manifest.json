@@ -2,7 +2,7 @@
   "name": "TiddlyFlashcards",
   "package": "TiddlyFlashcards",
   "author": "uzvg",
-  "version": "0.1.0",
+  "human_version": "0.1.0",
   "description": "Sync TiddlyFlashcards from Tiddlywiki",
   "homepage": "https://plugins.uzvg.site",
   "conflicts": [],
